@@ -56,7 +56,7 @@ func (a App) getVaultPass() (string, error) {
 func (a App) getVaultKey(filename string, key string) (string, error) {
 	pass, err := a.getVaultPass()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	rawVault, err := ansible_vault.DecryptFile(filename, pass)
