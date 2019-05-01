@@ -3,31 +3,105 @@ package vault
 import (
 	"errors"
 	"log"
+	"reflect"
 	"testing"
 
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
+func Test_New(t *testing.T) {
+	var cases = []struct {
+		intention  string
+		vaultPass  string
+		rootFolder string
+		separator  string
+		want       *App
+		wantErr    error
+	}{
+		{
+			"should reject empty vault pass",
+			"",
+			"",
+			"",
+			nil,
+			ErrNoVaultPass,
+		},
+		{
+			"should reject empty root folder",
+			"~/.vault_pass.txt",
+			"",
+			"",
+			nil,
+			ErrNoRootFolder,
+		},
+		{
+			"should have default value for key separator",
+			"~/.vault_pass.txt",
+			"ansible",
+			"",
+			&App{
+				vaultPass:    "~/.vault_pass.txt",
+				rootFolder:   "ansible",
+				keySeparator: defaultKeySeparator,
+			},
+			nil,
+		},
+		{
+			"should store given key separator",
+			"~/.vault_pass.txt",
+			"ansible",
+			"=",
+			&App{
+				vaultPass:    "~/.vault_pass.txt",
+				rootFolder:   "ansible",
+				keySeparator: "=",
+			},
+			nil,
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		result, err := New(testCase.vaultPass, testCase.rootFolder, testCase.separator)
+
+		failed = false
+
+		if err == nil && testCase.wantErr != nil {
+			failed = true
+		} else if err != nil && testCase.wantErr == nil {
+			failed = true
+		} else if err != nil && err.Error() != testCase.wantErr.Error() {
+			failed = true
+		} else if !reflect.DeepEqual(result, testCase.want) {
+			failed = true
+		}
+
+		if failed {
+			t.Errorf("%s\nNew(`%s`, `%s`, `%s`) = (%+v, %+v), want (%+v, %+v)", testCase.intention, testCase.vaultPass, testCase.rootFolder, testCase.separator, result, err, testCase.want, testCase.wantErr)
+		}
+	}
+}
+
 func Test_getVaultPass(t *testing.T) {
 	var cases = []struct {
-		intention string
-		app       App
-		want      string
-		wantErr   error
+		intention  string
+		vaultPass  string
+		rootFolder string
+		want       string
+		wantErr    error
 	}{
 		{
 			"should handle error while reading",
-			App{
-				vaultPass: "notExistingFile.txt",
-			},
+			"notExistingFile.txt",
+			"ansible",
 			"",
 			errors.New("open notExistingFile.txt: no such file or directory"),
 		},
 		{
 			"should sanitize vault pass",
-			App{
-				vaultPass: "vault_pass_test.txt",
-			},
+			"vault_pass_test.txt",
+			"ansible",
 			"secret",
 			nil,
 		},
@@ -36,7 +110,12 @@ func Test_getVaultPass(t *testing.T) {
 	var failed bool
 
 	for _, testCase := range cases {
-		result, err := testCase.app.getVaultPass()
+		app, err := New(testCase.vaultPass, testCase.rootFolder, "")
+		if err != nil {
+			t.Errorf("%s\nunable to create App: %+v", testCase.intention, err)
+		}
+
+		result, err := app.getVaultPass()
 
 		failed = false
 
@@ -57,29 +136,29 @@ func Test_getVaultPass(t *testing.T) {
 }
 
 func Test_getVaultKey(t *testing.T) {
-	if err := ansible_vault.EncryptFile("simple_vault_test.yaml", "API_KEY:YOU_SHOULD_NOT_SEE_ME", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile("simple_vault_test.yaml", "API_KEY:NOT_IN_CLEAR_TEXT", "secret"); err != nil {
 		log.Printf("unable to encrypt simple vault for testing: %v", err)
 		t.Fail()
 	}
 
-	if err := ansible_vault.EncryptFile("complex_vault_test.yaml", "API_KEY:YOU_SHOULD_NOT_SEE_ME\nTOKEN\nAPI_secret:password\n", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile("complex_vault_test.yaml", "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\n", "secret"); err != nil {
 		log.Printf("unable to encrypt complex vault for testing: %v", err)
 		t.Fail()
 	}
 
 	var cases = []struct {
-		intention string
-		app       App
-		filename  string
-		key       string
-		want      string
-		wantErr   error
+		intention  string
+		vaultPass  string
+		rootFolder string
+		filename   string
+		key        string
+		want       string
+		wantErr    error
 	}{
 		{
 			"should handle error while reading vault",
-			App{
-				vaultPass: "notExistingFile.txt",
-			},
+			"notExistingFile.txt",
+			"ansible",
 			"",
 			"api_key",
 			"",
@@ -87,9 +166,8 @@ func Test_getVaultKey(t *testing.T) {
 		},
 		{
 			"should handle error while decrypting file",
-			App{
-				vaultPass: "vault_pass_test.txt",
-			},
+			"vault_pass_test.txt",
+			"ansible",
 			"notExistingFile.txt",
 			"api_key",
 			"",
@@ -97,19 +175,17 @@ func Test_getVaultKey(t *testing.T) {
 		},
 		{
 			"should handle simple vault file with case insensitive comparison",
-			App{
-				vaultPass: "vault_pass_test.txt",
-			},
+			"vault_pass_test.txt",
+			"./",
 			"simple_vault_test.yaml",
 			"api_key",
-			"YOU_SHOULD_NOT_SEE_ME",
+			"NOT_IN_CLEAR_TEXT",
 			nil,
 		},
 		{
 			"should handle multi-line vault file",
-			App{
-				vaultPass: "vault_pass_test.txt",
-			},
+			"vault_pass_test.txt",
+			"./",
 			"complex_vault_test.yaml",
 			"API_SECRET",
 			"password",
@@ -120,7 +196,12 @@ func Test_getVaultKey(t *testing.T) {
 	var failed bool
 
 	for _, testCase := range cases {
-		result, err := testCase.app.getVaultKey(testCase.filename, testCase.key)
+		app, err := New(testCase.vaultPass, testCase.rootFolder, "")
+		if err != nil {
+			t.Errorf("%s\nunable to create App: %+v", testCase.intention, err)
+		}
+
+		result, err := app.getVaultKey(testCase.filename, testCase.key)
 
 		failed = false
 

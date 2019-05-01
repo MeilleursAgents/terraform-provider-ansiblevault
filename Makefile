@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 
-APP_NAME ?= terraform-provider-ansible-vault
+APP_NAME ?= terraform-provider-ansiblevault
 VERSION ?= $(shell git rev-parse --short HEAD)
 AUTHOR ?= $(shell git log --pretty=format:'%an' -n 1)
 
@@ -10,7 +10,7 @@ APP_PACKAGES = $(shell go list -e $(PACKAGES) | grep -v vendor | grep -v node_mo
 GOBIN=bin
 BINARY_PATH=$(GOBIN)/$(APP_NAME)
 
-LIB_SOURCE = cmd/main.go
+LIB_SOURCE = main.go
 
 ## help: Display list of commands
 .PHONY: help
@@ -43,7 +43,7 @@ $(APP_NAME): deps go
 
 ## go: Build app
 .PHONY: go
-go: format lint test bench build
+go: format lint test build
 
 ## deps: Download dependencies
 .PHONY: deps
@@ -57,8 +57,8 @@ deps:
 ## format: Format code
 .PHONY: format
 format:
-	goimports -w */*.go
-	gofmt -s -w */*.go
+	goimports -w *.go */*/*.go
+	gofmt -s -w *.go */*/*.go
 
 ## lint: Lint code
 .PHONY: lint
@@ -71,11 +71,6 @@ lint:
 .PHONY: test 
 test:
 	script/coverage
-
-## bench: Benchmark code
-.PHONY: bench
-bench:
-	go test $(APP_PACKAGES) -bench . -benchmem -run Benchmark.*
 
 ## build: Build binary
 .PHONY: build

@@ -2,14 +2,16 @@
 
 ## Usage
 
-```bash
-Usage of terraform-provider-ansible-vault:
-  -environment string
-        Vault environment
-  -key string
-        Key searched
-  -rootFolder string
-        Ansible root directory
-  -vaultPassFile string
-        Vault pass file (default "~/.vault_pass.txt")
+```tf
+provider "ansiblevault" {
+  vault_pass = "~/.vault_pass.txt"
+  root_folder = "~/infra/ansible/"
+}
+
+resource "ansiblevault_env" "api_key" {
+  env    = "prod"
+  value  = "SECRET_API_KEY"
+}
+
+${ansiblevault_env.api_key.value}
 ```

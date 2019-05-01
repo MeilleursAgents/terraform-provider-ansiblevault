@@ -1,6 +1,7 @@
 [[constraint]]
-  name = "github.com/peterbourgon/ff"
-  version = "1.0.3"
-[[constraint]]
   branch = "master"
   name = "github.com/sosedoff/ansible-vault-go"
+
+[[constraint]]
+  name = "github.com/hashicorp/terraform"
+  version = "0.11.13"

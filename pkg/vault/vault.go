@@ -2,7 +2,6 @@ package vault
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -11,37 +10,47 @@ import (
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
+const (
+	defaultKeySeparator = ":"
+)
+
 var (
+	// ErrNoVaultPass occurs when vault pass file is blank
+	ErrNoVaultPass = errors.New("no vault pass file")
+
+	// ErrNoRootFolder occurs when root folder is blank
+	ErrNoRootFolder = errors.New("no root folder")
+
 	// ErrKeyNotFound occurs when key is not found in vault
 	ErrKeyNotFound = errors.New("key not found")
 )
 
-// Config of package
-type Config struct {
-	vaultPass  *string
-	rootFolder *string
-}
-
 // App of package
 type App struct {
-	vaultPass  string
-	rootFolder string
-}
-
-// Flags adds flags for configuring package
-func Flags(fs *flag.FlagSet) Config {
-	return Config{
-		vaultPass:  fs.String("vaultPassFile", "~/.vault_pass.txt", "Vault pass file"),
-		rootFolder: fs.String("rootFolder", "", "Ansible root directory"),
-	}
+	vaultPass    string
+	rootFolder   string
+	keySeparator string
 }
 
 // New creates new App from Config
-func New(config Config) *App {
-	return &App{
-		vaultPass:  strings.TrimSpace(*config.vaultPass),
-		rootFolder: strings.TrimSpace(*config.rootFolder),
+func New(vaultPass, rootFolder, keySeparator string) (*App, error) {
+	if vaultPass == "" {
+		return nil, ErrNoVaultPass
 	}
+
+	if rootFolder == "" {
+		return nil, ErrNoRootFolder
+	}
+
+	if keySeparator == "" {
+		keySeparator = defaultKeySeparator
+	}
+
+	return &App{
+		vaultPass:    vaultPass,
+		rootFolder:   rootFolder,
+		keySeparator: keySeparator,
+	}, nil
 }
 
 func (a App) getVaultPass() (string, error) {
@@ -65,7 +74,7 @@ func (a App) getVaultKey(filename string, key string) (string, error) {
 	}
 
 	for _, n := range strings.Split(rawVault, "\n") {
-		parts := strings.Split(n, ":")
+		parts := strings.Split(n, a.keySeparator)
 
 		if len(parts) > 1 {
 			if strings.EqualFold(parts[0], key) {
@@ -79,5 +88,5 @@ func (a App) getVaultKey(filename string, key string) (string, error) {
 
 // InEnv retrieves given key in environment vault
 func (a App) InEnv(env string, key string) (string, error) {
-	return a.getVaultKey(path.Join(a.rootFolder, fmt.Sprintf("ansible/group_vars/tag_%s/vault.yml", env)), key)
+	return a.getVaultKey(path.Join(a.rootFolder, fmt.Sprintf("group_vars/tag_%s/vault.yml", env)), key)
 }
