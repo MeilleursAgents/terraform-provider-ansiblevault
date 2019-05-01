@@ -1,4 +1,4 @@
-# terraform-provider-ansible-vault
+# terraform-provider-ansiblevault
 
 ## Usage
 
