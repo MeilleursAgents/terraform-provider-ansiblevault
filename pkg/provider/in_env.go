@@ -32,7 +32,9 @@ func inEnvRead(data *schema.ResourceData, m interface{}) error {
 	env := data.Get("env").(string)
 	key := data.Get("key").(string)
 
-	value, err := m.(vault.App).InEnv(env, key)
+	data.SetId(time.Now().UTC().String())
+
+	value, err := m.(*vault.App).InEnv(env, key)
 	if err != nil {
 		return err
 	}
