@@ -191,6 +191,15 @@ func Test_getVaultKey(t *testing.T) {
 			"password",
 			nil,
 		},
+		{
+			"should handle error on not found key",
+			"vault_pass_test.txt",
+			"./",
+			"complex_vault_test.yaml",
+			"KEY_NOT_FOUND",
+			"",
+			ErrKeyNotFound,
+		},
 	}
 
 	var failed bool
