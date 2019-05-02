@@ -191,6 +191,15 @@ func Test_getVaultKey(t *testing.T) {
 			"password",
 			nil,
 		},
+		{
+			"should handle error on not found key",
+			"vault_pass_test.txt",
+			"./",
+			"complex_vault_test.yaml",
+			"KEY_NOT_FOUND",
+			"",
+			ErrKeyNotFound,
+		},
 	}
 
 	var failed bool
@@ -217,6 +226,55 @@ func Test_getVaultKey(t *testing.T) {
 
 		if failed {
 			t.Errorf("%s\ngetVaultKey(`%s`, `%s`) = (`%s`, %+v), want (`%s`, %+v)", testCase.intention, testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
+		}
+	}
+}
+
+func Test_sanitize(t *testing.T) {
+	var cases = []struct {
+		intention string
+		word      string
+		want      string
+	}{
+		{
+			"should sanitize quoted string",
+			" \"test\" ",
+			"test",
+		},
+		{
+			"should sanitize unquoted string",
+			" test",
+			"test",
+		},
+		{
+			"should sanitize regular string",
+			"test",
+			"test",
+		},
+		{
+			"should sanitize integer",
+			"11",
+			"11",
+		},
+		{
+			"should sanitize unquoted string with inside quote",
+			"1\"1",
+			"1\"1",
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		result := sanitize(testCase.word)
+		failed = false
+
+		if result != testCase.want {
+			failed = true
+		}
+
+		if failed {
+			t.Errorf("%s\ngetVaultPass() = (`%s`), want (`%s`)", testCase.intention, result, testCase.want)
 		}
 	}
 }

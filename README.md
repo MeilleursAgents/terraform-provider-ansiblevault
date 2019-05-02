@@ -8,10 +8,10 @@ provider "ansiblevault" {
   root_folder = "~/infra/ansible/"
 }
 
-resource "ansiblevault_env" "api_key" {
+data "ansiblevault_env" "api_key" {
   env = "prod"
   key = "SECRET_API_KEY"
 }
 
-${ansiblevault_env.api_key.value}
+${data.ansiblevault_env.api_key.value}
 ```

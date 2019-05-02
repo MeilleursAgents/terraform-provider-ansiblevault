@@ -38,7 +38,7 @@ func Provider() *schema.Provider {
 				Default:     ":",
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{
+		DataSourcesMap: map[string]*schema.Resource{
 			"ansiblevault_env": inEnvResource(),
 		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
