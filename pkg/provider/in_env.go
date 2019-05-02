@@ -22,7 +22,7 @@ func inEnvResource() *schema.Resource {
 			"value": {
 				Computed:    true,
 				Description: "Vault value found",
-				Type:        schema.TypeInt,
+				Type:        schema.TypeString,
 			},
 		},
 	}
