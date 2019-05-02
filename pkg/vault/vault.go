@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"path"
+	"strconv"
 	"strings"
 
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
@@ -78,7 +80,7 @@ func (a App) getVaultKey(filename string, key string) (string, error) {
 
 		if len(parts) > 1 {
 			if strings.EqualFold(parts[0], key) {
-				return parts[1], nil
+				return sanitize(parts[1]), nil
 			}
 		}
 	}
@@ -89,4 +91,17 @@ func (a App) getVaultKey(filename string, key string) (string, error) {
 // InEnv retrieves given key in environment vault
 func (a App) InEnv(env string, key string) (string, error) {
 	return a.getVaultKey(path.Join(a.rootFolder, fmt.Sprintf("group_vars/tag_%s/vault.yml", env)), key)
+}
+
+func sanitize(word string) string {
+	wordTrim := strings.TrimSpace(word)
+
+	s, err := strconv.Unquote(wordTrim)
+	if err != nil {
+		log.Printf("[WARNING] trouble on unquote value %+v", err)
+		// we arrive here with integer of non protected string
+		return wordTrim
+	}
+
+	return s
 }

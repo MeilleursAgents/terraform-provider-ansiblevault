@@ -220,3 +220,52 @@ func Test_getVaultKey(t *testing.T) {
 		}
 	}
 }
+
+func Test_sanitize(t *testing.T) {
+	var cases = []struct {
+		intention string
+		word      string
+		want      string
+	}{
+		{
+			"should sanitize quoted string",
+			" \"test\" ",
+			"test",
+		},
+		{
+			"should sanitize unquoted string",
+			" test",
+			"test",
+		},
+		{
+			"should sanitize regular string",
+			"test",
+			"test",
+		},
+		{
+			"should sanitize integer",
+			"11",
+			"11",
+		},
+		{
+			"should sanitize unquoted string with inside quote",
+			"1\"1",
+			"1\"1",
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		result := sanitize(testCase.word)
+		failed = false
+
+		if result != testCase.want {
+			failed = true
+		}
+
+		if failed {
+			t.Errorf("%s\ngetVaultPass() = (`%s`), want (`%s`)", testCase.intention, result, testCase.want)
+		}
+	}
+}
