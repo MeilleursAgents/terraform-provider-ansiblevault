@@ -1,7 +1,7 @@
 SHELL = /bin/sh
 
 APP_NAME ?= terraform-provider-ansiblevault
-VERSION ?= $(shell git rev-parse --short HEAD)
+VERSION=v1.0.1
 AUTHOR ?= $(shell git log --pretty=format:'%an' -n 1)
 
 PACKAGES ?= ./...
@@ -11,6 +11,9 @@ GOBIN=bin
 BINARY_PATH=$(GOBIN)/$(APP_NAME)
 
 LIB_SOURCE = main.go
+
+GO_ARCH=$(shell go env GOHOSTARCH)
+GO_OS=$(shell go env GOHOSTOS)
 
 ## help: Display list of commands
 .PHONY: help
@@ -76,3 +79,12 @@ test:
 .PHONY: build
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w" -installsuffix nocgo -o $(BINARY_PATH) $(LIB_SOURCE)
+
+.PHONY: install
+install:
+	mkdir -p $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/
+	cp bin/terraform-provider-ansiblevault $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault_$(VERSION)
+
+.PHONY: uninstall
+uninstall:
+	rm $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault_$(VERSION)
