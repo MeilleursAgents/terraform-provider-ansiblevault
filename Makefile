@@ -12,6 +12,9 @@ BINARY_PATH=$(GOBIN)/$(APP_NAME)
 
 LIB_SOURCE = main.go
 
+GO_ARCH=$(shell go env GOHOSTARCH)
+GO_OS=$(shell go env GOHOSTOS)
+
 ## help: Display list of commands
 .PHONY: help
 help: Makefile
@@ -76,3 +79,12 @@ test:
 .PHONY: build
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w" -installsuffix nocgo -o $(BINARY_PATH) $(LIB_SOURCE)
+
+.PHONY: install
+install:
+	mkdir -p $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/
+	cp bin/terraform-provider-ansiblevault $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault
+
+.PHONY: uninstall
+uninstall:
+	rm $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault
