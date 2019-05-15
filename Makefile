@@ -1,7 +1,7 @@
 SHELL = /bin/sh
 
 APP_NAME ?= terraform-provider-ansiblevault
-VERSION ?= $(shell git rev-parse --short HEAD)
+VERSION=v1.0.1
 AUTHOR ?= $(shell git log --pretty=format:'%an' -n 1)
 
 PACKAGES ?= ./...
@@ -83,8 +83,8 @@ build:
 .PHONY: install
 install:
 	mkdir -p $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/
-	cp bin/terraform-provider-ansiblevault $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault
+	cp bin/terraform-provider-ansiblevault $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault_$(VERSION)
 
 .PHONY: uninstall
 uninstall:
-	rm $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault
+	rm $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/terraform-provider-ansiblevault_$(VERSION)
