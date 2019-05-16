@@ -93,6 +93,11 @@ func (a App) InEnv(env string, key string) (string, error) {
 	return a.getVaultKey(path.Join(a.rootFolder, fmt.Sprintf("group_vars/tag_%s/vault.yml", env)), key)
 }
 
+// InPath retrieves given key in vault file
+func (a App) InPath(vaultPath string, key string) (string, error) {
+	return a.getVaultKey(path.Join(a.rootFolder, vaultPath), key)
+}
+
 func sanitize(word string) string {
 	wordTrim := strings.TrimSpace(word)
 
