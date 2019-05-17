@@ -1,11 +1,8 @@
 SHELL = /bin/sh
 
 APP_NAME ?= terraform-provider-ansiblevault
-VERSION=v1.0.1
-AUTHOR ?= $(shell git log --pretty=format:'%an' -n 1)
-
+VERSION = v1.0.1
 PACKAGES ?= ./...
-APP_PACKAGES = $(shell go list -e $(PACKAGES) | grep -v vendor | grep -v node_modules)
 
 GOBIN=bin
 BINARY_PATH=$(GOBIN)/$(APP_NAME)
@@ -38,7 +35,7 @@ version:
 ## author: Output author's name of last commit
 .PHONY: author
 author:
-	@python -c 'import sys; import urllib; sys.stdout.write(urllib.quote_plus(sys.argv[1]))' "$(AUTHOR)"
+	@python -c 'import sys; import urllib; sys.stdout.write(urllib.quote_plus(sys.argv[1]))' "$(shell git log --pretty=format:'%an' -n 1)"
 
 ## $(APP_NAME): Build app with dependencies download
 .PHONY: $(APP_NAME)
@@ -51,11 +48,9 @@ go: format lint test build
 ## deps: Download dependencies
 .PHONY: deps
 deps:
-	go get github.com/golang/dep/cmd/dep
 	go get github.com/kisielk/errcheck
 	go get golang.org/x/lint/golint
 	go get golang.org/x/tools/cmd/goimports
-	dep ensure
 
 ## format: Format code
 .PHONY: format
@@ -66,12 +61,12 @@ format:
 ## lint: Lint code
 .PHONY: lint
 lint:
-	golint $(APP_PACKAGES)
-	errcheck -ignoretests $(APP_PACKAGES)
-	go vet $(APP_PACKAGES)
+	golint $(PACKAGES)
+	errcheck -ignoretests $(PACKAGES)
+	go vet $(PACKAGES)
 
 ## test: Test with coverage
-.PHONY: test 
+.PHONY: test
 test:
 	script/coverage
 
