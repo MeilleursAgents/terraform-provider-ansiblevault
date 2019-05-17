@@ -2,10 +2,12 @@
 
 ## Usage
 
+ansiblevault_env example:
+-------------------------
 ```tf
 provider "ansiblevault" {
-  vault_pass  = "~/.vault_pass.txt"
-  root_folder = "~/infra/ansible/"
+  vault_pass  = "/home/username/.vault_pass.txt"
+  root_folder = "/home/username/infra/ansible/"
 }
 
 data "ansiblevault_env" "api_key" {
@@ -14,6 +16,22 @@ data "ansiblevault_env" "api_key" {
 }
 
 ${data.ansiblevault_env.api_key.value}
+```
+
+ansiblevault_path example:
+-------------------------
+```tf
+provider "ansiblevault" {
+  vault_pass  = "/home/username/.vault_pass.txt"
+  root_folder = "/home/username/infra/ansible/"
+}
+
+data "ansiblevault_path" "api_key" {
+  path = "./passwords.yml"
+  key = "USER_PASSWORD"
+}
+
+${data.ansiblevault_path.api_key.value}
 ```
 
 ## Contribution
