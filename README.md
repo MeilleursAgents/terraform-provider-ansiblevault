@@ -34,3 +34,6 @@ data "ansiblevault_path" "api_key" {
 ${data.ansiblevault_path.api_key.value}
 ```
 
+## Contribution
+
+You have to enable [Go modules](https://github.com/golang/go/wiki/Modules) for compiling this project.

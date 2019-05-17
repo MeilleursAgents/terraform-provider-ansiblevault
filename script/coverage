@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
-set -e
+set -o nounset -o pipefail -o errexit
 
 MODE="mode: atomic"
 
 echo "${MODE}" > coverage.txt
 
-for pkg in $(go list "${PACKAGES:-./...}" | grep -v vendor | grep -v node_modules); do
-    go test -covermode=atomic -coverprofile=profile.out "${pkg}"
+for pkg in $(go list "${PACKAGES:-./...}"); do
+  go test -race -covermode=atomic -coverprofile=profile.out "${pkg}"
 
-    if [ -f profile.out ]; then
-        cat profile.out | grep -v "${MODE}" >> coverage.txt || true
-        rm profile.out
-    fi
+  if [[ -f "profile.out" ]]; then
+    cat profile.out | grep -v "${MODE}" >> coverage.txt || true
+    rm profile.out
+  fi
 done
 
 go tool cover -func=coverage.txt
