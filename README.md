@@ -10,7 +10,7 @@ Made with ❤️ by [MeilleursAgents](https://www.meilleursagents.com)
 
 ## Thanks
 
-Thanks to [ansible-vault-go](github.com/sosedoff/ansible-vault-go) repository for having done the hardest part.
+Thanks to [ansible-vault-go](https://github.com/sosedoff/ansible-vault-go) repository for having done the hardest part.
 
 ## Installation
 
