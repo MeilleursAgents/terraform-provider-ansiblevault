@@ -1,9 +1,10 @@
 language: go
-go:
-  - 1.12
 matrix:
+  allow_failures:
+  - go: master
   include:
-  - env:
+  - go: master
+    env:
       - GOARCH=amd64
       - GOOS=linux
       - GO111MODULE=on
@@ -11,7 +12,17 @@ matrix:
       directories:
         - $HOME/.cache/go-build
         - $HOME/gopath/pkg/mod
-  - env:
+  - go: 1.12.x
+    env:
+      - GOARCH=amd64
+      - GOOS=linux
+      - GO111MODULE=on
+    cache:
+      directories:
+        - $HOME/.cache/go-build
+        - $HOME/gopath/pkg/mod
+  - go: 1.12.x
+    env:
       - GOARCH=arm64
       - GOOS=linux
       - GO111MODULE=on
@@ -19,7 +30,8 @@ matrix:
       directories:
         - $HOME/.cache/go-build
         - $HOME/gopath/pkg/mod
-  - env:
+  - go: 1.12.x
+    env:
       - GOARCH=386
       - GOOS=linux
       - GO111MODULE=on
