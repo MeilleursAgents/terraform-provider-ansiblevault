@@ -12,7 +12,7 @@ LIB_SOURCE = main.go
 GO_ARCH=$(shell go env GOHOSTARCH)
 GO_OS=$(shell go env GOHOSTOS)
 
-.DEFAULT_GOAL := build
+.DEFAULT_GOAL := $(APP_NAME)
 
 ## help: Display list of commands
 .PHONY: help
