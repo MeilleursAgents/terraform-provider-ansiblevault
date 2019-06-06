@@ -9,7 +9,7 @@ import (
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
-func Test_New(t *testing.T) {
+func TestNew(t *testing.T) {
 	var cases = []struct {
 		intention  string
 		vaultPass  string
@@ -60,30 +60,30 @@ func Test_New(t *testing.T) {
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		result, err := New(testCase.vaultPass, testCase.rootFolder, testCase.separator)
+		t.Run(testCase.intention, func(t *testing.T) {
+			result, err := New(testCase.vaultPass, testCase.rootFolder, testCase.separator)
 
-		failed = false
+			failed := false
 
-		if err == nil && testCase.wantErr != nil {
-			failed = true
-		} else if err != nil && testCase.wantErr == nil {
-			failed = true
-		} else if err != nil && err.Error() != testCase.wantErr.Error() {
-			failed = true
-		} else if !reflect.DeepEqual(result, testCase.want) {
-			failed = true
-		}
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if !reflect.DeepEqual(result, testCase.want) {
+				failed = true
+			}
 
-		if failed {
-			t.Errorf("%s\nNew(`%s`, `%s`, `%s`) = (%+v, %+v), want (%+v, %+v)", testCase.intention, testCase.vaultPass, testCase.rootFolder, testCase.separator, result, err, testCase.want, testCase.wantErr)
-		}
+			if failed {
+				t.Errorf("New(`%s`, `%s`, `%s`) = (%#v, %#v), want (%#v, %#v)", testCase.vaultPass, testCase.rootFolder, testCase.separator, result, err, testCase.want, testCase.wantErr)
+			}
+		})
 	}
 }
 
-func Test_getVaultPass(t *testing.T) {
+func TestGetVaultPass(t *testing.T) {
 	var cases = []struct {
 		intention  string
 		vaultPass  string
@@ -107,35 +107,35 @@ func Test_getVaultPass(t *testing.T) {
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		app, err := New(testCase.vaultPass, testCase.rootFolder, "")
-		if err != nil {
-			t.Errorf("%s\nunable to create App: %+v", testCase.intention, err)
-		}
+		t.Run(testCase.intention, func(t *testing.T) {
+			app, err := New(testCase.vaultPass, testCase.rootFolder, "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+			}
 
-		result, err := app.getVaultPass()
+			result, err := app.getVaultPass()
 
-		failed = false
+			failed := false
 
-		if err == nil && testCase.wantErr != nil {
-			failed = true
-		} else if err != nil && testCase.wantErr == nil {
-			failed = true
-		} else if err != nil && err.Error() != testCase.wantErr.Error() {
-			failed = true
-		} else if result != testCase.want {
-			failed = true
-		}
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
 
-		if failed {
-			t.Errorf("%s\ngetVaultPass() = (`%s`, %+v), want (`%s`, %+v)", testCase.intention, result, err, testCase.want, testCase.wantErr)
-		}
+			if failed {
+				t.Errorf("getVaultPass() = (`%s`, %#v), want (`%s`, %#v)", result, err, testCase.want, testCase.wantErr)
+			}
+		})
 	}
 }
 
-func Test_getVaultKey(t *testing.T) {
+func TestGetVaultKey(t *testing.T) {
 	if err := ansible_vault.EncryptFile("simple_vault_test.yaml", "API_KEY:NOT_IN_CLEAR_TEXT", "secret"); err != nil {
 		log.Printf("unable to encrypt simple vault for testing: %v", err)
 		t.Fail()
@@ -202,35 +202,35 @@ func Test_getVaultKey(t *testing.T) {
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		app, err := New(testCase.vaultPass, testCase.rootFolder, "")
-		if err != nil {
-			t.Errorf("%s\nunable to create App: %+v", testCase.intention, err)
-		}
+		t.Run(testCase.intention, func(t *testing.T) {
+			app, err := New(testCase.vaultPass, testCase.rootFolder, "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+			}
 
-		result, err := app.getVaultKey(testCase.filename, testCase.key)
+			result, err := app.getVaultKey(testCase.filename, testCase.key)
 
-		failed = false
+			failed := false
 
-		if err == nil && testCase.wantErr != nil {
-			failed = true
-		} else if err != nil && testCase.wantErr == nil {
-			failed = true
-		} else if err != nil && err.Error() != testCase.wantErr.Error() {
-			failed = true
-		} else if result != testCase.want {
-			failed = true
-		}
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
 
-		if failed {
-			t.Errorf("%s\ngetVaultKey(`%s`, `%s`) = (`%s`, %+v), want (`%s`, %+v)", testCase.intention, testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
-		}
+			if failed {
+				t.Errorf("getVaultKey(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
+			}
+		})
 	}
 }
 
-func Test_sanitize(t *testing.T) {
+func TestSanitize(t *testing.T) {
 	var cases = []struct {
 		intention string
 		word      string
@@ -263,18 +263,11 @@ func Test_sanitize(t *testing.T) {
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		result := sanitize(testCase.word)
-		failed = false
-
-		if result != testCase.want {
-			failed = true
-		}
-
-		if failed {
-			t.Errorf("%s\ngetVaultPass() = (`%s`), want (`%s`)", testCase.intention, result, testCase.want)
-		}
+		t.Run(testCase.intention, func(t *testing.T) {
+			if result := sanitize(testCase.word); testCase.want != result {
+				t.Errorf("sanitize(`%s`) = (`%s`), want (`%s`)", testCase.word, result, testCase.want)
+			}
+		})
 	}
 }
