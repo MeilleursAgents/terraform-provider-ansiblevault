@@ -2,7 +2,9 @@ package provider
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"path"
 	"testing"
 
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/pkg/vault"
@@ -10,7 +12,7 @@ import (
 )
 
 func TestInEnvRead(t *testing.T) {
-	if err := ansible_vault.EncryptFile("group_vars/tag_prod/vault.yml", "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "group_vars/tag_prod/vault.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
 		log.Printf("unable to encrypt dev vault for testing: %v", err)
 		t.Fail()
 	}
@@ -41,7 +43,7 @@ func TestInEnvRead(t *testing.T) {
 			"dev",
 			"SECRET_KEY",
 			"",
-			errors.New("open group_vars/tag_dev/vault.yml: no such file or directory"),
+			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "group_vars/tag_dev/vault.yml")),
 		},
 	}
 
@@ -60,7 +62,7 @@ func TestInEnvRead(t *testing.T) {
 				return
 			}
 
-			vaultApp, err := vault.New("vault_pass_test.txt", "./", "")
+			vaultApp, err := vault.New(path.Join(filesFolder, "vault_pass_test.txt"), filesFolder, "")
 			if err != nil {
 				t.Errorf("unable to create vault app: %#v", err)
 				return

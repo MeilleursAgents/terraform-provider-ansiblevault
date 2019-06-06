@@ -2,7 +2,9 @@ package provider
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"path"
 	"testing"
 
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/pkg/vault"
@@ -10,7 +12,7 @@ import (
 )
 
 func TestInPathRead(t *testing.T) {
-	if err := ansible_vault.EncryptFile("group_vars/tag_prod/vault.yml", "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "InPathRead.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
 		log.Printf("unable to encrypt dev vault for testing: %v", err)
 		t.Fail()
 	}
@@ -24,24 +26,24 @@ func TestInPathRead(t *testing.T) {
 	}{
 		{
 			"simple",
-			"tag_prod/vault.yml",
+			"InPathRead.yml",
 			"API_KEY",
 			"PROD_KEEP_IT_SECRET",
 			nil,
 		},
 		{
 			"not found key",
-			"tag_prod/vault.yml",
+			"InPathRead.yml",
 			"SECRET_KEY",
 			"",
-			errors.New("SECRET_KEY not found in tag_prod/vault.yml vault"),
+			errors.New("SECRET_KEY not found in InPathRead.yml vault"),
 		},
 		{
-			"not found env",
-			"tag_dev/vault.yml",
+			"not found path",
+			"InPathReadNotFound.yml",
 			"SECRET_KEY",
 			"",
-			errors.New("open group_vars/tag_dev/vault.yml: no such file or directory"),
+			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "InPathReadNotFound.yml")),
 		},
 	}
 
@@ -60,7 +62,7 @@ func TestInPathRead(t *testing.T) {
 				return
 			}
 
-			vaultApp, err := vault.New("vault_pass_test.txt", "group_vars", "")
+			vaultApp, err := vault.New(path.Join(filesFolder, "vault_pass_test.txt"), filesFolder, "")
 			if err != nil {
 				t.Errorf("unable to create vault app: %#v", err)
 				return

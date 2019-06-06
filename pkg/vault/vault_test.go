@@ -2,11 +2,17 @@ package vault
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"path"
 	"reflect"
 	"testing"
 
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
+)
+
+const (
+	filesFolder = "../../files/"
 )
 
 func TestNew(t *testing.T) {
@@ -100,7 +106,7 @@ func TestGetVaultPass(t *testing.T) {
 		},
 		{
 			"should sanitize vault pass",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"ansible",
 			"secret",
 			nil,
@@ -137,12 +143,12 @@ func TestGetVaultPass(t *testing.T) {
 }
 
 func TestGetVaultKey(t *testing.T) {
-	if err := ansible_vault.EncryptFile("simple_vault_test.yaml", "API_KEY:NOT_IN_CLEAR_TEXT", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "simple_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT", "secret"); err != nil {
 		log.Printf("unable to encrypt simple vault for testing: %v", err)
 		t.Fail()
 	}
 
-	if err := ansible_vault.EncryptFile("complex_vault_test.yaml", "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\n", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "complex_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\n", "secret"); err != nil {
 		log.Printf("unable to encrypt complex vault for testing: %v", err)
 		t.Fail()
 	}
@@ -167,7 +173,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle error while decrypting file",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"ansible",
 			"notExistingFile.txt",
 			"api_key",
@@ -176,27 +182,27 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle simple vault file with case insensitive comparison",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"./",
-			"simple_vault_test.yaml",
+			path.Join(filesFolder, "simple_vault_test.yaml"),
 			"api_key",
 			"NOT_IN_CLEAR_TEXT",
 			nil,
 		},
 		{
 			"should handle multi-line vault file",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"./",
-			"complex_vault_test.yaml",
+			path.Join(filesFolder, "complex_vault_test.yaml"),
 			"API_SECRET",
 			"password",
 			nil,
 		},
 		{
 			"should handle error on not found key",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"./",
-			"complex_vault_test.yaml",
+			path.Join(filesFolder, "complex_vault_test.yaml"),
 			"KEY_NOT_FOUND",
 			"",
 			ErrKeyNotFound,
@@ -233,7 +239,7 @@ func TestGetVaultKey(t *testing.T) {
 }
 
 func TestInEnv(t *testing.T) {
-	if err := ansible_vault.EncryptFile("group_vars/tag_prod/vault.yml", "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "group_vars/tag_prod/vault.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
 		log.Printf("unable to encrypt dev vault for testing: %v", err)
 		t.Fail()
 	}
@@ -257,7 +263,7 @@ func TestInEnv(t *testing.T) {
 			"dev",
 			"API_KEY",
 			"",
-			errors.New("open group_vars/tag_dev/vault.yml: no such file or directory"),
+			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "group_vars/tag_dev/vault.yml")),
 		},
 	}
 
@@ -266,7 +272,7 @@ func TestInEnv(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New("vault_pass_test.txt", "./", "")
+			app, err := New(path.Join(filesFolder, "vault_pass_test.txt"), filesFolder, "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
@@ -294,7 +300,7 @@ func TestInEnv(t *testing.T) {
 }
 
 func TestInPath(t *testing.T) {
-	if err := ansible_vault.EncryptFile("group_vars/tag_prod/vault.yml", "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "group_vars/tag_prod/vault.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
 		log.Printf("unable to encrypt dev vault for testing: %v", err)
 		t.Fail()
 	}
@@ -318,7 +324,7 @@ func TestInPath(t *testing.T) {
 			"not_found.yml",
 			"API_KEY",
 			"",
-			errors.New("open group_vars/not_found.yml: no such file or directory"),
+			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "group_vars", "not_found.yml")),
 		},
 	}
 
@@ -327,7 +333,7 @@ func TestInPath(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New("vault_pass_test.txt", "group_vars", "")
+			app, err := New(path.Join(filesFolder, "vault_pass_test.txt"), path.Join(filesFolder, "group_vars"), "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
