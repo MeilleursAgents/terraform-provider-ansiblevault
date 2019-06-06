@@ -1,5 +1,7 @@
 # terraform-provider-ansiblevault
 
+[![Build Status](https://travis-ci.org/MeilleursAgents/terraform-provider-ansiblevault.svg?branch=master)](https://travis-ci.org/MeilleursAgents/terraform-provider-ansiblevault)
+
 ## Usage
 
 ansiblevault_env example:
