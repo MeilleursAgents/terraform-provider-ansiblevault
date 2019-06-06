@@ -2,14 +2,20 @@ package vault
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"path"
 	"reflect"
 	"testing"
 
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
-func Test_New(t *testing.T) {
+const (
+	filesFolder = "../../files/"
+)
+
+func TestNew(t *testing.T) {
 	var cases = []struct {
 		intention  string
 		vaultPass  string
@@ -60,30 +66,30 @@ func Test_New(t *testing.T) {
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		result, err := New(testCase.vaultPass, testCase.rootFolder, testCase.separator)
+		t.Run(testCase.intention, func(t *testing.T) {
+			result, err := New(testCase.vaultPass, testCase.rootFolder, testCase.separator)
 
-		failed = false
+			failed := false
 
-		if err == nil && testCase.wantErr != nil {
-			failed = true
-		} else if err != nil && testCase.wantErr == nil {
-			failed = true
-		} else if err != nil && err.Error() != testCase.wantErr.Error() {
-			failed = true
-		} else if !reflect.DeepEqual(result, testCase.want) {
-			failed = true
-		}
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if !reflect.DeepEqual(result, testCase.want) {
+				failed = true
+			}
 
-		if failed {
-			t.Errorf("%s\nNew(`%s`, `%s`, `%s`) = (%+v, %+v), want (%+v, %+v)", testCase.intention, testCase.vaultPass, testCase.rootFolder, testCase.separator, result, err, testCase.want, testCase.wantErr)
-		}
+			if failed {
+				t.Errorf("New(`%s`, `%s`, `%s`) = (%#v, %#v), want (%#v, %#v)", testCase.vaultPass, testCase.rootFolder, testCase.separator, result, err, testCase.want, testCase.wantErr)
+			}
+		})
 	}
 }
 
-func Test_getVaultPass(t *testing.T) {
+func TestGetVaultPass(t *testing.T) {
 	var cases = []struct {
 		intention  string
 		vaultPass  string
@@ -100,48 +106,49 @@ func Test_getVaultPass(t *testing.T) {
 		},
 		{
 			"should sanitize vault pass",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"ansible",
 			"secret",
 			nil,
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		app, err := New(testCase.vaultPass, testCase.rootFolder, "")
-		if err != nil {
-			t.Errorf("%s\nunable to create App: %+v", testCase.intention, err)
-		}
+		t.Run(testCase.intention, func(t *testing.T) {
+			app, err := New(testCase.vaultPass, testCase.rootFolder, "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+				return
+			}
 
-		result, err := app.getVaultPass()
+			result, err := app.getVaultPass()
 
-		failed = false
+			failed := false
 
-		if err == nil && testCase.wantErr != nil {
-			failed = true
-		} else if err != nil && testCase.wantErr == nil {
-			failed = true
-		} else if err != nil && err.Error() != testCase.wantErr.Error() {
-			failed = true
-		} else if result != testCase.want {
-			failed = true
-		}
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
 
-		if failed {
-			t.Errorf("%s\ngetVaultPass() = (`%s`, %+v), want (`%s`, %+v)", testCase.intention, result, err, testCase.want, testCase.wantErr)
-		}
+			if failed {
+				t.Errorf("getVaultPass() = (`%s`, %#v), want (`%s`, %#v)", result, err, testCase.want, testCase.wantErr)
+			}
+		})
 	}
 }
 
-func Test_getVaultKey(t *testing.T) {
-	if err := ansible_vault.EncryptFile("simple_vault_test.yaml", "API_KEY:NOT_IN_CLEAR_TEXT", "secret"); err != nil {
+func TestGetVaultKey(t *testing.T) {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "simple_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT", "secret"); err != nil {
 		log.Printf("unable to encrypt simple vault for testing: %v", err)
 		t.Fail()
 	}
 
-	if err := ansible_vault.EncryptFile("complex_vault_test.yaml", "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\n", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "complex_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\n", "secret"); err != nil {
 		log.Printf("unable to encrypt complex vault for testing: %v", err)
 		t.Fail()
 	}
@@ -166,7 +173,7 @@ func Test_getVaultKey(t *testing.T) {
 		},
 		{
 			"should handle error while decrypting file",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"ansible",
 			"notExistingFile.txt",
 			"api_key",
@@ -175,62 +182,185 @@ func Test_getVaultKey(t *testing.T) {
 		},
 		{
 			"should handle simple vault file with case insensitive comparison",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"./",
-			"simple_vault_test.yaml",
+			path.Join(filesFolder, "simple_vault_test.yaml"),
 			"api_key",
 			"NOT_IN_CLEAR_TEXT",
 			nil,
 		},
 		{
 			"should handle multi-line vault file",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"./",
-			"complex_vault_test.yaml",
+			path.Join(filesFolder, "complex_vault_test.yaml"),
 			"API_SECRET",
 			"password",
 			nil,
 		},
 		{
 			"should handle error on not found key",
-			"vault_pass_test.txt",
+			path.Join(filesFolder, "vault_pass_test.txt"),
 			"./",
-			"complex_vault_test.yaml",
+			path.Join(filesFolder, "complex_vault_test.yaml"),
 			"KEY_NOT_FOUND",
 			"",
 			ErrKeyNotFound,
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		app, err := New(testCase.vaultPass, testCase.rootFolder, "")
-		if err != nil {
-			t.Errorf("%s\nunable to create App: %+v", testCase.intention, err)
-		}
+		t.Run(testCase.intention, func(t *testing.T) {
+			app, err := New(testCase.vaultPass, testCase.rootFolder, "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+				return
+			}
 
-		result, err := app.getVaultKey(testCase.filename, testCase.key)
+			result, err := app.getVaultKey(testCase.filename, testCase.key)
 
-		failed = false
+			failed := false
 
-		if err == nil && testCase.wantErr != nil {
-			failed = true
-		} else if err != nil && testCase.wantErr == nil {
-			failed = true
-		} else if err != nil && err.Error() != testCase.wantErr.Error() {
-			failed = true
-		} else if result != testCase.want {
-			failed = true
-		}
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
 
-		if failed {
-			t.Errorf("%s\ngetVaultKey(`%s`, `%s`) = (`%s`, %+v), want (`%s`, %+v)", testCase.intention, testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
-		}
+			if failed {
+				t.Errorf("getVaultKey(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
+			}
+		})
 	}
 }
 
-func Test_sanitize(t *testing.T) {
+func TestInEnv(t *testing.T) {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "group_vars/tag_prod/vault.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+		log.Printf("unable to encrypt dev vault for testing: %v", err)
+		t.Fail()
+	}
+
+	var cases = []struct {
+		intention string
+		env       string
+		key       string
+		want      string
+		wantErr   error
+	}{
+		{
+			"simple",
+			"prod",
+			"API_KEY",
+			"PROD_KEEP_IT_SECRET",
+			nil,
+		},
+		{
+			"not existing env",
+			"dev",
+			"API_KEY",
+			"",
+			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "group_vars/tag_dev/vault.yml")),
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		t.Run(testCase.intention, func(t *testing.T) {
+
+			app, err := New(path.Join(filesFolder, "vault_pass_test.txt"), filesFolder, "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+				return
+			}
+
+			result, err := app.InEnv(testCase.env, testCase.key)
+
+			failed = false
+
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
+
+			if failed {
+				t.Errorf("InEnv(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.env, testCase.key, result, err, testCase.want, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func TestInPath(t *testing.T) {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "group_vars/tag_prod/vault.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+		log.Printf("unable to encrypt dev vault for testing: %v", err)
+		t.Fail()
+	}
+
+	var cases = []struct {
+		intention string
+		path      string
+		key       string
+		want      string
+		wantErr   error
+	}{
+		{
+			"simple",
+			"tag_prod/vault.yml",
+			"API_KEY",
+			"PROD_KEEP_IT_SECRET",
+			nil,
+		},
+		{
+			"not existing env",
+			"not_found.yml",
+			"API_KEY",
+			"",
+			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "group_vars", "not_found.yml")),
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		t.Run(testCase.intention, func(t *testing.T) {
+
+			app, err := New(path.Join(filesFolder, "vault_pass_test.txt"), path.Join(filesFolder, "group_vars"), "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+				return
+			}
+
+			result, err := app.InPath(testCase.path, testCase.key)
+
+			failed = false
+
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
+
+			if failed {
+				t.Errorf("InPath(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.path, testCase.key, result, err, testCase.want, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func TestSanitize(t *testing.T) {
 	var cases = []struct {
 		intention string
 		word      string
@@ -263,18 +393,11 @@ func Test_sanitize(t *testing.T) {
 		},
 	}
 
-	var failed bool
-
 	for _, testCase := range cases {
-		result := sanitize(testCase.word)
-		failed = false
-
-		if result != testCase.want {
-			failed = true
-		}
-
-		if failed {
-			t.Errorf("%s\ngetVaultPass() = (`%s`), want (`%s`)", testCase.intention, result, testCase.want)
-		}
+		t.Run(testCase.intention, func(t *testing.T) {
+			if result := sanitize(testCase.word); testCase.want != result {
+				t.Errorf("sanitize(`%s`) = (`%s`), want (`%s`)", testCase.word, result, testCase.want)
+			}
+		})
 	}
 }
