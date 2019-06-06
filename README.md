@@ -4,6 +4,10 @@
 [![codecov](https://codecov.io/gh/MeilleursAgents/terraform-provider-ansiblevault/branch/master/graph/badge.svg)](https://codecov.io/gh/MeilleursAgents/terraform-provider-ansiblevault)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MeilleursAgents/terraform-provider-ansiblevault)](https://goreportcard.com/report/github.com/MeilleursAgents/terraform-provider-ansiblevault)
 
+This Terraform provider allows you to access secrets from an Ansible Vault from Terraform.
+
+Made with ❤️ by [MeilleursAgents](https://www.meilleursagents.com)
+
 ## Thanks
 
 Thanks to [ansible-vault-go](github.com/sosedoff/ansible-vault-go) repository for having done the hardest part.
