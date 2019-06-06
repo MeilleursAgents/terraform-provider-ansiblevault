@@ -74,3 +74,9 @@ ${data.ansiblevault_path.api_key.value}
 ## Contribution
 
 You have to enable [Go modules](https://github.com/golang/go/wiki/Modules) for compiling this project.
+
+## License
+
+This project is licensed under the MIT license (see LICENSE file).
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMeilleursAgents%2Fterraform-provider-ansiblevault.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FMeilleursAgents%2Fterraform-provider-ansiblevault?ref=badge_large)
