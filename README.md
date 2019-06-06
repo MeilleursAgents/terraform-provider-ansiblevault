@@ -6,7 +6,7 @@
 
 ## Thanks
 
-Thanks to [ansible-vault-go](github.com/sosedoff/ansible-vault-go) repository for have done the hardest part.
+Thanks to [ansible-vault-go](github.com/sosedoff/ansible-vault-go) repository for having done the hardest part.
 
 ## Installation
 
