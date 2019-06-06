@@ -39,5 +39,7 @@ matrix:
       directories:
         - $HOME/.cache/go-build
         - $HOME/gopath/pkg/mod
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 notifications:
   email: false
