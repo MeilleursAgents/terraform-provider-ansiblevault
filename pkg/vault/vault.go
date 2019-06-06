@@ -103,8 +103,8 @@ func sanitize(word string) string {
 
 	s, err := strconv.Unquote(wordTrim)
 	if err != nil {
-		log.Printf("[WARNING] trouble on unquote value %+v", err)
 		// we arrive here with integer of non protected string
+		log.Printf("[WARNING] unable to unquote value: %s", err)
 		return wordTrim
 	}
 

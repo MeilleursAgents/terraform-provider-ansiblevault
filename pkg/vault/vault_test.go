@@ -112,6 +112,7 @@ func TestGetVaultPass(t *testing.T) {
 			app, err := New(testCase.vaultPass, testCase.rootFolder, "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
+				return
 			}
 
 			result, err := app.getVaultPass()
@@ -207,6 +208,7 @@ func TestGetVaultKey(t *testing.T) {
 			app, err := New(testCase.vaultPass, testCase.rootFolder, "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
+				return
 			}
 
 			result, err := app.getVaultKey(testCase.filename, testCase.key)
@@ -225,6 +227,128 @@ func TestGetVaultKey(t *testing.T) {
 
 			if failed {
 				t.Errorf("getVaultKey(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func TestInEnv(t *testing.T) {
+	if err := ansible_vault.EncryptFile("group_vars/tag_prod/vault.yml", "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+		log.Printf("unable to encrypt dev vault for testing: %v", err)
+		t.Fail()
+	}
+
+	var cases = []struct {
+		intention string
+		env       string
+		key       string
+		want      string
+		wantErr   error
+	}{
+		{
+			"simple",
+			"prod",
+			"API_KEY",
+			"PROD_KEEP_IT_SECRET",
+			nil,
+		},
+		{
+			"not existing env",
+			"dev",
+			"API_KEY",
+			"",
+			errors.New("open group_vars/tag_dev/vault.yml: no such file or directory"),
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		t.Run(testCase.intention, func(t *testing.T) {
+
+			app, err := New("vault_pass_test.txt", "./", "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+				return
+			}
+
+			result, err := app.InEnv(testCase.env, testCase.key)
+
+			failed = false
+
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
+
+			if failed {
+				t.Errorf("InEnv(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.env, testCase.key, result, err, testCase.want, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func TestInPath(t *testing.T) {
+	if err := ansible_vault.EncryptFile("group_vars/tag_prod/vault.yml", "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
+		log.Printf("unable to encrypt dev vault for testing: %v", err)
+		t.Fail()
+	}
+
+	var cases = []struct {
+		intention string
+		path      string
+		key       string
+		want      string
+		wantErr   error
+	}{
+		{
+			"simple",
+			"tag_prod/vault.yml",
+			"API_KEY",
+			"PROD_KEEP_IT_SECRET",
+			nil,
+		},
+		{
+			"not existing env",
+			"not_found.yml",
+			"API_KEY",
+			"",
+			errors.New("open group_vars/not_found.yml: no such file or directory"),
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		t.Run(testCase.intention, func(t *testing.T) {
+
+			app, err := New("vault_pass_test.txt", "group_vars", "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+				return
+			}
+
+			result, err := app.InPath(testCase.path, testCase.key)
+
+			failed = false
+
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
+
+			if failed {
+				t.Errorf("InPath(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.path, testCase.key, result, err, testCase.want, testCase.wantErr)
 			}
 		})
 	}
