@@ -14,6 +14,8 @@ Thanks to [ansible-vault-go](https://github.com/sosedoff/ansible-vault-go) repos
 
 ## Installation
 
+### Golang Way
+
 If you have [Golang installed](https://golang.org/dl/)
 
 ```bash
@@ -30,7 +32,7 @@ make build
 make install
 ```
 
-Without golang
+### Without golang
 
 ```bash
 PLUGIN_VERSION="1.0.1"
