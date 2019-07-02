@@ -90,5 +90,10 @@ uninstall:
 clean:
 	rm $(BINARY_PATH)_$(VERSION)
 
+## github: build and deploy on github
+.PHONY: github
+github:
+	go run cmd/release/*.go -access-token ${token}
+
 .PHONY: all
 all: build install

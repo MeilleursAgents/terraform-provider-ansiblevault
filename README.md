@@ -75,6 +75,12 @@ data "ansiblevault_path" "api_key" {
 ${data.ansiblevault_path.api_key.value}
 ```
 
+## Build and Deploy
+
+```bash
+make github token=<dev_key>
+```
+
 ## Contribution
 
 You have to enable [Go modules](https://github.com/golang/go/wiki/Modules) for compiling this project.
