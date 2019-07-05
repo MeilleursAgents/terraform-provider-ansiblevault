@@ -26,9 +26,11 @@ func build(date, tag string) ([]string, error) {
 				"go",
 				"build",
 				"-ldflags",
-				fmt.Sprintf("-s -w -X %s.Version=%s -X %s.BuildDate=%s -installsuffix nocgo", gitRepoURL, tag, gitRepoURL, date),
+				fmt.Sprintf("-s -w -X %s.Version=%s -X %s.BuildDate=%s", gitRepoURL, tag, gitRepoURL, date),
 				"-o",
 				target,
+				"-installsuffix",
+				"nocgo",
 				".",
 			)
 
