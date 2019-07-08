@@ -2,3 +2,4 @@ bin/
 vendor/
 coverage.txt
 **/*test.yaml
+dist/
