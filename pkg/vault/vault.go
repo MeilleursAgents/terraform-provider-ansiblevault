@@ -76,7 +76,7 @@ func (a App) getVaultKey(filename string, key string) (string, error) {
 	}
 
 	for _, n := range strings.Split(rawVault, "\n") {
-		parts := strings.Split(n, a.keySeparator)
+		parts := strings.SplitN(n, a.keySeparator, 2)
 
 		if len(parts) > 1 {
 			if strings.EqualFold(parts[0], key) {

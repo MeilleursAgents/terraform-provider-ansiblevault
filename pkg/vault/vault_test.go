@@ -148,7 +148,7 @@ func TestGetVaultKey(t *testing.T) {
 		t.Fail()
 	}
 
-	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "complex_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\n", "secret"); err != nil {
+	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "complex_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\nAPI_complex_secret:test:[!\"\"\n", "secret"); err != nil {
 		log.Printf("unable to encrypt complex vault for testing: %v", err)
 		t.Fail()
 	}
@@ -206,6 +206,15 @@ func TestGetVaultKey(t *testing.T) {
 			"KEY_NOT_FOUND",
 			"",
 			ErrKeyNotFound,
+		},
+		{
+			"should handle multi-line vault file with separator in password",
+			path.Join(filesFolder, "vault_pass_test.txt"),
+			"./",
+			path.Join(filesFolder, "complex_vault_test.yaml"),
+			"API_complex_secret",
+			"test:[!\"\"",
+			nil,
 		},
 	}
 
