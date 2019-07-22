@@ -1,17 +1,17 @@
 SHELL = /bin/sh
 
 APP_NAME ?= terraform-provider-ansiblevault
-VERSION = $(shell git describe --tags)
 PACKAGES ?= ./...
 GO_FILES ?= *.go */*/*.go
+VERSION = $(shell git describe --tags)
 
 GOBIN=bin
 BINARY_PATH=$(GOBIN)/$(APP_NAME)
 
 LIB_SOURCE = main.go
 
-GO_ARCH=$(shell go env GOHOSTARCH)
-GO_OS=$(shell go env GOHOSTOS)
+GO_ARCH ?= $(shell go env GOHOSTARCH)
+GO_OS ?= $(shell go env GOHOSTOS)
 
 TERRAFORM_PLUGIN_FOLDER ?= $(HOME)/.terraform.d/plugins
 
@@ -70,23 +70,26 @@ test:
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w" -installsuffix nocgo -o $(BINARY_PATH)_$(VERSION) $(LIB_SOURCE)
 
+# install: Install plugin into terraform plugin system
 .PHONY: install
 install:
 	mkdir -p $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/
 	cp $(BINARY_PATH)_$(VERSION) $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
 
+# uninstall: Remove plugin from terraform plugin system
 .PHONY: uninstall
 uninstall:
 	rm $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
 
+# clean: Delete binary
 .PHONY: clean
 clean:
 	rm $(BINARY_PATH)_$(VERSION)
 
-## github: build and deploy on github
+## github: Build and deploy on github
 .PHONY: github
 github:
-	go run cmd/release/*.go -access-token ${token}
+	./script/release
 
 .PHONY: all
 all: build install
