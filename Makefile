@@ -1,8 +1,9 @@
 SHELL = /bin/sh
 
 APP_NAME ?= terraform-provider-ansiblevault
-VERSION = v1.1.0
+VERSION = $(shell git describe --tags)
 PACKAGES ?= ./...
+GO_FILES ?= *.go */*/*.go
 
 GOBIN=bin
 BINARY_PATH=$(GOBIN)/$(APP_NAME)
@@ -12,7 +13,9 @@ LIB_SOURCE = main.go
 GO_ARCH=$(shell go env GOHOSTARCH)
 GO_OS=$(shell go env GOHOSTOS)
 
-.DEFAULT_GOAL := $(APP_NAME)
+TERRAFORM_PLUGIN_FOLDER ?= $(HOME)/.terraform.d/plugins
+
+.DEFAULT_GOAL := app
 
 ## help: Display list of commands
 .PHONY: help
@@ -24,24 +27,14 @@ help: Makefile
 name:
 	@echo -n $(APP_NAME)
 
-## dist: Output binary path
-.PHONY: dist
-dist:
-	@echo -n $(BINARY_PATH)
-
 ## version: Output sha1 of last commit
 .PHONY: version
 version:
 	@echo -n $(VERSION)
 
-## author: Output author's name of last commit
-.PHONY: author
-author:
-	@python -c 'import sys; import urllib; sys.stdout.write(urllib.quote_plus(sys.argv[1]))' "$(shell git log --pretty=format:'%an' -n 1)"
-
-## $(APP_NAME): Build app with dependencies download
-.PHONY: $(APP_NAME)
-$(APP_NAME): deps go
+##app: Build app with dependencies download
+.PHONY: app
+app: deps go
 
 ## go: Build app
 .PHONY: go
@@ -57,8 +50,8 @@ deps:
 ## format: Format code
 .PHONY: format
 format:
-	goimports -w *.go */*/*.go
-	gofmt -s -w *.go */*/*.go
+	goimports -w $(GO_FILES)
+	gofmt -s -w $(GO_FILES)
 
 ## lint: Lint code
 .PHONY: lint
@@ -79,12 +72,12 @@ build:
 
 .PHONY: install
 install:
-	mkdir -p $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/
-	cp $(BINARY_PATH)_$(VERSION) $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
+	mkdir -p $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/
+	cp $(BINARY_PATH)_$(VERSION) $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
 
 .PHONY: uninstall
 uninstall:
-	rm $(HOME)/.terraform.d/plugins/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
+	rm $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
 
 .PHONY: clean
 clean:
