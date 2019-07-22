@@ -3,6 +3,8 @@ jobs:
   - stage: Build
 
     language: go
+    env:
+      - GO111MODULE=on
     matrix:
       allow_failures:
       - go: master
@@ -11,7 +13,6 @@ jobs:
         env:
           - GOARCH=amd64
           - GOOS=linux
-          - GO111MODULE=on
         cache:
           directories:
             - $HOME/.cache/go-build
@@ -20,7 +21,6 @@ jobs:
         env:
           - GOARCH=amd64
           - GOOS=linux
-          - GO111MODULE=on
         cache:
           directories:
             - $HOME/.cache/go-build
@@ -29,7 +29,6 @@ jobs:
         env:
           - GOARCH=arm64
           - GOOS=linux
-          - GO111MODULE=on
         cache:
           directories:
             - $HOME/.cache/go-build
@@ -38,7 +37,6 @@ jobs:
         env:
           - GOARCH=386
           - GOOS=linux
-          - GO111MODULE=on
         cache:
           directories:
             - $HOME/.cache/go-build
