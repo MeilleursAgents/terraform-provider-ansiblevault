@@ -3,3 +3,4 @@ vendor/
 coverage.txt
 **/*test.yaml
 dist/
+output.txt

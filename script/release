@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+set -o nounset -o pipefail -o errexit
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+readonly OUTPUT_DIR="${SCRIPT_DIR}/../dist"
+readonly OUTPUT_TXT="output.txt"
+readonly TARGETS=('linux/amd64' 'linux/386' 'darwin/amd64')
+
+read_variable_if_required() {
+  if [[ -z "${!1:-}" ]]; then
+    read -p "${2:-${1}=}" "${1}"
+  else
+    echo "${1}="${!1}
+  fi
+}
+
+clean() {
+  rm -rf "${OUTPUT_DIR}"
+  mkdir "${OUTPUT_DIR}"
+}
+
+build() {
+  if [[ "${#}" -ne 2 ]]; then
+    echo "Usage: build [BINARY_NAME] [MAIN_SOURCE]"
+    return 1
+  fi
+
+  local GITHUB_REPOSITORY_PATH="github.com/${GITHUB_REPOSITORY}"
+  local BUILD_DATE=$(date "+%Y-%m-%d_%H:%M:%S")
+
+  for os_arch in "${TARGETS[@]}"; do
+    IFS='/' read -ra context <<< "${os_arch}"
+
+    local GOOS="${context[0]}"
+    local GOARCH="${context[1]}"
+
+    GOOS="${GOOS}" GOARCH="${GOARCH}" CGO_ENABLED=0 go build -ldflags="-s -w -X ${GITHUB_REPOSITORY_PATH}.Version=${GIT_TAG} -X ${GITHUB_REPOSITORY_PATH}.BuildDate=${BUILD_DATE}" -installsuffix nocgo -o "${OUTPUT_DIR}/${1}_${GOOS}_${GOARCH}_${GIT_TAG}" "${SCRIPT_DIR}/../${2}"
+  done
+}
+
+get_release_body() {
+  if [[ "${#}" -ne 1 ]]; then
+    echo "Usage: get_release_body [GIT_TAG]"
+    return 1
+  fi
+
+  local PREVIOUS_TAG=$(git tag --sort=-taggerdate | grep -v "${1}" | head -n 1)
+
+  git log --no-merges --pretty=format:'%h %s' "${1}...${PREVIOUS_TAG}" | awk '!a[substr($0,8)]++' | awk '{printf "* %s\\n",$0}'
+}
+
+release() {
+  local RED='\033[0;31m'
+  local GREEN='\033[0;32m'
+  local BLUE='\033[0;34m'
+  local RESET='\033[0m'
+
+  echo -e "${BLUE}Creating release ${GIT_TAG} for ${GITHUB_REPOSITORY}...${RESET}"
+
+  local BODY=$(get_release_body "${GIT_TAG}" | sed 's|"|'"'"'|g')
+  echo -e "${GREEN}${BODY}${RESET}"
+
+  echo
+  local HTTP_STATUS=$(curl \
+    -H "Content-Type: application/json" \
+    -H "Authorization: token ${GITHUB_OAUTH_TOKEN}" \
+    -X POST \
+    -o "${OUTPUT_TXT}" \
+    -w "%{http_code}" \
+    "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
+    -d "{
+      \"tag_name\": \"${GIT_TAG}\",
+      \"name\": \"${RELEASE_NAME}\",
+      \"body\": \"${BODY}\"
+    }")
+
+  if [[ "${HTTP_STATUS}" != "201" ]]; then
+     echo -e "${RED}Failed to create release${RESET}"
+     cat "${OUTPUT_TXT}"
+     rm "${OUTPUT_TXT}"
+     exit 1
+  fi
+
+  local response_url=$(python -c "import json; data = json.load(open(\"${OUTPUT_TXT}\")); print(data[\"upload_url\"]);" | sed 's|{.*||')
+  rm "${OUTPUT_TXT}"
+
+  for asset in "${OUTPUT_DIR}"/*; do
+    echo -e "${BLUE}Uploading asset ${asset}...${RESET}"
+    echo
+
+    local HTTP_STATUS=$(curl \
+      -H "Content-Type: application/x-executable" \
+      -H "Authorization: token ${GITHUB_OAUTH_TOKEN}" \
+      -X POST \
+      -o "${OUTPUT_TXT}" \
+      -w "%{http_code}" \
+      "${response_url}?name=$(basename ${asset})" \
+      --data-binary "@${asset}")
+
+    if [[ "${HTTP_STATUS}" != "201" ]]; then
+       echo -e "${RED}Failed to upload asset ${asset}${RESET}"
+       cat "${OUTPUT_TXT}"
+       rm "${OUTPUT_TXT}"
+       exit 1
+    fi
+  done
+
+  rm "${OUTPUT_TXT}"
+
+  echo -e "${GREEN}Done!${RESET}"
+}
+
+read_variable_if_required GITHUB_OAUTH_TOKEN
+read_variable_if_required GITHUB_REPOSITORY
+read_variable_if_required GIT_TAG
+read_variable_if_required RELEASE_NAME
+
+clean
+build "terraform-provider-ansiblevault" "main.go"
+release

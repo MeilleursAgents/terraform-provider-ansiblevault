@@ -90,8 +90,18 @@ ${data.ansiblevault_path.api_key.value}
 
 ## Build and Deploy
 
+You need following environment variables for doing a release. If not set, the `release` script will ask you.
+
+| Name | Description |
+|:--:|:--:|
+| GITHUB_OAUTH_TOKEN | A Github Token with `repos` access |
+| GITHUB_REPOSITORY | The repository name for uploading assets (e.g. MeilleursAgents/terraform-provider-ansiblevault) |
+| GIT_TAG | The new version to release (e.g. v1.0.0) |
+| RELEASE_NAME | The version name (most of the time, the git tag) |
+
 ```bash
-make github token=<dev_key>
+git tag "${GIT_TAG}"
+GITHUB_REPOSITORY=MeilleursAgents/terraform-provider-ansiblevault ./script/release
 ```
 
 ## Contribution

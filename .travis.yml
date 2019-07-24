@@ -1,45 +1,64 @@
-language: go
-matrix:
-  allow_failures:
-  - go: master
+jobs:
   include:
-  - go: master
+  - stage: Build
+
+    language: go
     env:
-      - GOARCH=amd64
-      - GOOS=linux
       - GO111MODULE=on
-    cache:
-      directories:
-        - $HOME/.cache/go-build
-        - $HOME/gopath/pkg/mod
-  - go: 1.12.x
+    matrix:
+      allow_failures:
+      - go: master
+      include:
+      - go: master
+        env:
+          - GOARCH=amd64
+          - GOOS=linux
+        cache:
+          directories:
+            - $HOME/.cache/go-build
+            - $HOME/gopath/pkg/mod
+      - go: 1.12.x
+        env:
+          - GOARCH=amd64
+          - GOOS=linux
+        cache:
+          directories:
+            - $HOME/.cache/go-build
+            - $HOME/gopath/pkg/mod
+      - go: 1.12.x
+        env:
+          - GOARCH=arm64
+          - GOOS=linux
+        cache:
+          directories:
+            - $HOME/.cache/go-build
+            - $HOME/gopath/pkg/mod
+      - go: 1.12.x
+        env:
+          - GOARCH=386
+          - GOOS=linux
+        cache:
+          directories:
+            - $HOME/.cache/go-build
+            - $HOME/gopath/pkg/mod
+    after_success:
+      - bash <(curl -s https://codecov.io/bash)
+
+  - stage: Release
+
+    language: go
+    go: 1.12
     env:
-      - GOARCH=amd64
-      - GOOS=linux
       - GO111MODULE=on
-    cache:
-      directories:
-        - $HOME/.cache/go-build
-        - $HOME/gopath/pkg/mod
-  - go: 1.12.x
-    env:
-      - GOARCH=arm64
-      - GOOS=linux
-      - GO111MODULE=on
-    cache:
-      directories:
-        - $HOME/.cache/go-build
-        - $HOME/gopath/pkg/mod
-  - go: 1.12.x
-    env:
-      - GOARCH=386
-      - GOOS=linux
-      - GO111MODULE=on
-    cache:
-      directories:
-        - $HOME/.cache/go-build
-        - $HOME/gopath/pkg/mod
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+      - GITHUB_REPOSITORY=MeilleursAgents/terraform-provider-ansiblevault
+      - GIT_TAG=${TRAVIS_TAG}
+      - RELEASE_NAME=${TRAVIS_TAG}
+    script: ./script/release
+
+stages:
+  - Build
+  - name: Release
+    if: tag =~ /^v\d+\.\d+\.\d+$/
+
 notifications:
   email: false
