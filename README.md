@@ -94,7 +94,7 @@ You need following environment variables for doing a release. If not set, the `r
 
 | Name | Description |
 |:--:|:--:|
-| GITHUB_OAUTH_TOKEN | A Github Token with `repos` access |
+| GITHUB_OAUTH_TOKEN | A Github Token with `repos` access (you can generate it [here](https://github.com/settings/tokens/new)) |
 | GITHUB_REPOSITORY | The repository name for uploading assets (e.g. MeilleursAgents/terraform-provider-ansiblevault) |
 | GIT_TAG | The new version to release (e.g. v1.0.0) |
 | RELEASE_NAME | The version name (most of the time, the git tag) |
