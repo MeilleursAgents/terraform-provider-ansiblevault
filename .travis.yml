@@ -17,7 +17,7 @@ jobs:
           directories:
             - $HOME/.cache/go-build
             - $HOME/gopath/pkg/mod
-      - go: 1.12.x
+      - go: 1.13.x
         env:
           - GOARCH=amd64
           - GOOS=linux
@@ -25,7 +25,7 @@ jobs:
           directories:
             - $HOME/.cache/go-build
             - $HOME/gopath/pkg/mod
-      - go: 1.12.x
+      - go: 1.13.x
         env:
           - GOARCH=arm64
           - GOOS=linux
@@ -33,7 +33,7 @@ jobs:
           directories:
             - $HOME/.cache/go-build
             - $HOME/gopath/pkg/mod
-      - go: 1.12.x
+      - go: 1.13.x
         env:
           - GOARCH=386
           - GOOS=linux
@@ -47,7 +47,7 @@ jobs:
   - stage: Release
 
     language: go
-    go: 1.12
+    go: 1.13
     env:
       - GO111MODULE=on
       - GITHUB_REPOSITORY=MeilleursAgents/terraform-provider-ansiblevault
