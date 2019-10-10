@@ -14,40 +14,8 @@ Thanks to [ansible-vault-go](https://github.com/sosedoff/ansible-vault-go) repos
 
 ## Installation
 
-### Golang Way
-
-If you have [Golang installed](https://golang.org/dl/)
-
 ```bash
-go install github.com/MeilleursAgents/terraform-provider-ansiblevault
-mkdir -p "~/.terraform.d/plugins/$(go env GOHOSTOS)_$(go env GOHOSTARCH)/"
-cp ${GOPATH}/bin/terraform-provider-ansiblevault "~/.terraform.d/plugins/$(go env GOHOSTOS)_$(go env GOHOSTARCH)/"
-```
-
-or
-
-In the repository
-```bash
-make build
-make install
-```
-
-### Without golang
-
-```bash
-PLUGIN_VERSION="1.0.1"
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m | tr '[:upper:]' '[:lower:]')
-
-if [[ "${ARCH}" = "x86_64" ]]; then
-  ARCH="amd64"
-fi
-
-pushd $HOME
-mkdir -p ".terraform.d/plugins/${OS}_${ARCH}/"
-cd ".terraform.d/plugins/${OS}_${ARCH}/"
-curl -o "terraform-provider-ansiblevault_v${PLUGIN_VERSION}" "https://github.com/MeilleursAgents/terraform-provider-ansiblevault/releases/download/v${PLUGIN_VERSION}/terraform-provider-ansiblevault_${OS}-${ARCH}_v${PLUGIN_VERSION}"
-popd
+curl https://raw.githubusercontent.com/MeilleursAgents/terraform-provider-ansiblevault/master/install.sh | bash
 ```
 
 ## Usage
