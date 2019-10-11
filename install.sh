@@ -42,7 +42,8 @@ main() {
 
   mkdir -p "${PLUGIN_DIR}"
   pushd "${PLUGIN_DIR}" || return
-  curl -q -sS -Lo "terraform-provider-ansiblevault_${PLUGIN_VERSION}" "https://github.com/MeilleursAgents/terraform-provider-ansiblevault/releases/download/${PLUGIN_VERSION}/terraform-provider-ansiblevault_${OS}-${ARCH}_${PLUGIN_VERSION}"
+  curl -q -sS -Lo "terraform-provider-ansiblevault_${PLUGIN_VERSION}" "https://github.com/MeilleursAgents/terraform-provider-ansiblevault/releases/download/${PLUGIN_VERSION}/terraform-provider-ansiblevault_${OS}_${ARCH}_${PLUGIN_VERSION}"
+  chmod +x "terraform-provider-ansiblevault_${PLUGIN_VERSION}"
   popd || return
 }
 
