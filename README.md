@@ -35,7 +35,7 @@ data "ansiblevault_env" "api_key" {
   key = "SECRET_API_KEY"
 }
 
-${data.ansiblevault_env.api_key.value}
+${data.ansiblevault_env.api_key.value} will contain value of `SECRET_API_KEY` stored in "/home/username/infra/ansible/group_vars/tag_prod/vault.yaml"
 ```
 
 ansiblevault_path example:
@@ -53,7 +53,28 @@ data "ansiblevault_path" "api_key" {
   key = "USER_PASSWORD"
 }
 
-${data.ansiblevault_path.api_key.value}
+${data.ansiblevault_path.api_key.value} will contain value of `USER_PASSWORD` stored in "/home/username/infra/ansible/passwords.yml"
+```
+
+## Documentation
+
+### Provider
+
+| Key | Required | EnvVar | Description |
+|:--:|:--:|:--:|:--:|
+| vault_pass | ✅ | `ANSIBLE_VAULT_PASS_FILE` | Ansible vault pass file |
+| root_folder | ✅ | `ANSIBLE_ROOT_FOLDER` | Ansible root directory |
+| key_separator | | | Separator of key/value pair in Ansible vault (default `:`) |
+
+For an easy way to configure provider with environment variables, consider the following snippet:
+
+```bash
+VAULT_PASS="$(ansible-config dump | grep DEFAULT_VAULT_PASSWORD_FILE | awk '{print $3}')"
+
+cat >> "${HOME}/.localrc" << EOM
+export ANSIBLE_VAULT_PASS_FILE="${VAULT_PASS}"
+export ANSIBLE_ROOT_FOLDER="$(pwd)/../path/to/my/ansible/"
+EOM
 ```
 
 ## Build and Deploy
