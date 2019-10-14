@@ -103,6 +103,13 @@ func sanitize(word string) string {
 
 	s, err := strconv.Unquote(wordTrim)
 	if err != nil {
+		wordTrimLen := len(wordTrim)
+
+		// we arrive here with integer of non protected string or single quoted string
+		if wordTrimLen > 2 && wordTrim[0] == wordTrim[wordTrimLen-1] && wordTrim[0] == byte('\'') {
+			return wordTrim[1 : wordTrimLen-1]
+		}
+
 		// we arrive here with integer of non protected string
 		log.Printf("[WARNING] unable to unquote value: %s", err)
 		return wordTrim

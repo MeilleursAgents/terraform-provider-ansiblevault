@@ -381,6 +381,21 @@ func TestSanitize(t *testing.T) {
 			"test",
 		},
 		{
+			"should sanitize single quoted string",
+			" 'test' ",
+			"test",
+		},
+		{
+			"should sanitize empty single quoted",
+			"''",
+			"",
+		},
+		{
+			"should not sanitize single quoted",
+			"'",
+			"'",
+		},
+		{
 			"should sanitize unquoted string",
 			" test",
 			"test",
