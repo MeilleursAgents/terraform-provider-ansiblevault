@@ -3,7 +3,7 @@ package provider
 import "testing"
 
 const (
-	filesFolder = "../../files/"
+	ansibleFolder = "../../examples/ansible/"
 )
 
 func TestProvider(t *testing.T) {

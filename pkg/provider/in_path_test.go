@@ -3,20 +3,13 @@ package provider
 import (
 	"errors"
 	"fmt"
-	"log"
 	"path"
 	"testing"
 
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/pkg/vault"
-	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
 func TestInPathRead(t *testing.T) {
-	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "InPathRead.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
-		log.Printf("unable to encrypt dev vault for testing: %v", err)
-		t.Fail()
-	}
-
 	var cases = []struct {
 		intention string
 		path      string
@@ -43,7 +36,7 @@ func TestInPathRead(t *testing.T) {
 			"InPathReadNotFound.yml",
 			"SECRET_KEY",
 			"",
-			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "InPathReadNotFound.yml")),
+			fmt.Errorf("open %s: no such file or directory", path.Join(ansibleFolder, "InPathReadNotFound.yml")),
 		},
 	}
 
@@ -62,7 +55,7 @@ func TestInPathRead(t *testing.T) {
 				return
 			}
 
-			vaultApp, err := vault.New(path.Join(filesFolder, "vault_pass_test.txt"), filesFolder, "")
+			vaultApp, err := vault.New(path.Join(ansibleFolder, "vault_pass_test.txt"), ansibleFolder, "")
 			if err != nil {
 				t.Errorf("unable to create vault app: %#v", err)
 				return
