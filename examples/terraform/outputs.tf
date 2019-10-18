@@ -1,7 +1,7 @@
 output "path" {
-    value = data.ansiblevault_path.path
+  value = data.ansiblevault_path.path
 }
 
 output "env" {
-    value = data.ansiblevault_env.env
+  value = data.ansiblevault_env.env
 }
