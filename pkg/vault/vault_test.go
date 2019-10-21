@@ -3,16 +3,13 @@ package vault
 import (
 	"errors"
 	"fmt"
-	"log"
 	"path"
 	"reflect"
 	"testing"
-
-	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
 const (
-	filesFolder = "../../files/"
+	ansibleFolder = "../../examples/ansible/"
 )
 
 func TestNew(t *testing.T) {
@@ -106,7 +103,7 @@ func TestGetVaultPass(t *testing.T) {
 		},
 		{
 			"should sanitize vault pass",
-			path.Join(filesFolder, "vault_pass_test.txt"),
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
 			"ansible",
 			"secret",
 			nil,
@@ -143,16 +140,6 @@ func TestGetVaultPass(t *testing.T) {
 }
 
 func TestGetVaultKey(t *testing.T) {
-	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "simple_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT", "secret"); err != nil {
-		log.Printf("unable to encrypt simple vault for testing: %v", err)
-		t.Fail()
-	}
-
-	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "complex_vault_test.yaml"), "API_KEY:NOT_IN_CLEAR_TEXT\nTOKEN\nAPI_secret:password\nAPI_complex_secret:test:[!\"\"\n", "secret"); err != nil {
-		log.Printf("unable to encrypt complex vault for testing: %v", err)
-		t.Fail()
-	}
-
 	var cases = []struct {
 		intention  string
 		vaultPass  string
@@ -173,7 +160,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle error while decrypting file",
-			path.Join(filesFolder, "vault_pass_test.txt"),
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
 			"ansible",
 			"notExistingFile.txt",
 			"api_key",
@@ -182,36 +169,36 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle simple vault file with case insensitive comparison",
-			path.Join(filesFolder, "vault_pass_test.txt"),
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
 			"./",
-			path.Join(filesFolder, "simple_vault_test.yaml"),
+			path.Join(ansibleFolder, "simple_vault_test.yaml"),
 			"api_key",
 			"NOT_IN_CLEAR_TEXT",
 			nil,
 		},
 		{
 			"should handle multi-line vault file",
-			path.Join(filesFolder, "vault_pass_test.txt"),
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
 			"./",
-			path.Join(filesFolder, "complex_vault_test.yaml"),
+			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"API_SECRET",
 			"password",
 			nil,
 		},
 		{
 			"should handle error on not found key",
-			path.Join(filesFolder, "vault_pass_test.txt"),
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
 			"./",
-			path.Join(filesFolder, "complex_vault_test.yaml"),
+			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"KEY_NOT_FOUND",
 			"",
 			ErrKeyNotFound,
 		},
 		{
 			"should handle multi-line vault file with separator in password",
-			path.Join(filesFolder, "vault_pass_test.txt"),
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
 			"./",
-			path.Join(filesFolder, "complex_vault_test.yaml"),
+			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"API_complex_secret",
 			"test:[!\"\"",
 			nil,
@@ -248,11 +235,6 @@ func TestGetVaultKey(t *testing.T) {
 }
 
 func TestInEnv(t *testing.T) {
-	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "group_vars/tag_prod/vault.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
-		log.Printf("unable to encrypt dev vault for testing: %v", err)
-		t.Fail()
-	}
-
 	var cases = []struct {
 		intention string
 		env       string
@@ -272,7 +254,7 @@ func TestInEnv(t *testing.T) {
 			"dev",
 			"API_KEY",
 			"",
-			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "group_vars/tag_dev/vault.yml")),
+			fmt.Errorf("open %s: no such file or directory", path.Join(ansibleFolder, "group_vars/tag_dev/vault.yml")),
 		},
 	}
 
@@ -281,7 +263,7 @@ func TestInEnv(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New(path.Join(filesFolder, "vault_pass_test.txt"), filesFolder, "")
+			app, err := New(path.Join(ansibleFolder, "vault_pass_test.txt"), ansibleFolder, "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
@@ -309,11 +291,6 @@ func TestInEnv(t *testing.T) {
 }
 
 func TestInPath(t *testing.T) {
-	if err := ansible_vault.EncryptFile(path.Join(filesFolder, "group_vars/tag_prod/vault.yml"), "API_KEY:PROD_KEEP_IT_SECRET", "secret"); err != nil {
-		log.Printf("unable to encrypt dev vault for testing: %v", err)
-		t.Fail()
-	}
-
 	var cases = []struct {
 		intention string
 		path      string
@@ -333,7 +310,7 @@ func TestInPath(t *testing.T) {
 			"not_found.yml",
 			"API_KEY",
 			"",
-			fmt.Errorf("open %s: no such file or directory", path.Join(filesFolder, "group_vars", "not_found.yml")),
+			fmt.Errorf("open %s: no such file or directory", path.Join(ansibleFolder, "group_vars", "not_found.yml")),
 		},
 	}
 
@@ -342,7 +319,7 @@ func TestInPath(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New(path.Join(filesFolder, "vault_pass_test.txt"), path.Join(filesFolder, "group_vars"), "")
+			app, err := New(path.Join(ansibleFolder, "vault_pass_test.txt"), path.Join(ansibleFolder, "group_vars"), "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return

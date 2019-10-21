@@ -1,6 +1,7 @@
 bin/
 vendor/
 coverage.txt
-**/*test.yaml
 dist/
 output.txt
+examples/terraform/.terraform
+examples/terraform/terraform.tfstate
