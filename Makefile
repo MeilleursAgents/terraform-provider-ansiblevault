@@ -89,7 +89,12 @@ clean:
 ## github: Build and deploy on github
 .PHONY: github
 github:
-	./script/release
+	script/release
+
+## config: Configure dev environment
+.PHONY: config
+config:
+	script/install_hooks
 
 .PHONY: all
 all: build install

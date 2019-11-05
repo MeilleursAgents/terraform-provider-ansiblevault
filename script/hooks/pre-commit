@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+set -o nounset -o pipefail
+
+main() {
+  local BLUE='\033[0;34m'
+  local RED='\033[0;31m'
+  local YELLOW='\033[33m'
+  local RESET='\033[0m'
+
+  local PASS=0
+  local GO_FILES
+  GO_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.go$" | tr '\n' ' ')
+  local INITIAL_DIFF
+  INITIAL_DIFF=$(git diff --name-only --diff-filter=ACMR)
+
+  if [[ "${PASS}" == "0" ]] && [[ "${GO_FILES}" != "" ]]; then
+      echo -e "${BLUE}Formating golang files${RESET}"
+      GO_FILES="${GO_FILES}" make --silent format
+      PASS=$?
+  fi
+
+  if [[ "${PASS}" == "0" ]] && [[ "${GO_FILES}" != "" ]]; then
+      echo -e "${BLUE}Linting golang packages${RESET}"
+      make --silent lint
+      PASS=$?
+  fi
+
+  if ! [[ "$PASS" == "0" ]]; then
+      echo -e "${RED}COMMIT FAILED${RESET}"
+      echo -e "${RED}Last check failed during pre-commit. Please fix errors and try committing again.${RESET}"
+
+      exit 1
+  fi
+
+  local FINAL_DIFF
+  FINAL_DIFF=$(git diff --name-only --diff-filter=ACMR)
+
+  if ! [[ "${INITIAL_DIFF}" == "${FINAL_DIFF}" ]]; then
+      echo -e "${RED}Pre-commit has changes files${RESET}"
+      echo -e "${RED}Consider adding updated file with ${BLUE}git add -i \&\& git commit --amend${RESET}"
+  fi
+
+  local COMMITS_SINCE_LAST_TAG
+  COMMITS_SINCE_LAST_TAG="$(git rev-list --count "$(git tag --sort=-creatordate | head -n 1)"..HEAD)"
+  if [[ "${COMMITS_SINCE_LAST_TAG}" -ne 0 ]]; then
+    echo -e "${YELLOW}${COMMITS_SINCE_LAST_TAG} commits since last tag${RESET}"
+  fi
+
+  exit 0
+}
+
+main

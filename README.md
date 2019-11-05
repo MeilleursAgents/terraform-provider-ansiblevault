@@ -98,29 +98,27 @@ VAULT_PASS="$(ansible-config dump | grep DEFAULT_VAULT_PASSWORD_FILE | awk '{pri
 
 cat >> "${HOME}/.localrc" << EOM
 export ANSIBLE_VAULT_PASS_FILE="${VAULT_PASS}"
-export ANSIBLE_ROOT_FOLDER="$(pwd)/../path/to/my/ansible/"
+export ANSIBLE_ROOT_FOLDER="/path/to/my/ansible/"
 EOM
-```
-
-## Build and Deploy
-
-You need following environment variables for doing a release. If not set, the `release` script will ask you.
-
-| Name | Description |
-|:--:|:--:|
-| GITHUB_OAUTH_TOKEN | A Github Token with `repos` access (you can generate it [here](https://github.com/settings/tokens/new)) |
-| GITHUB_REPOSITORY | The repository name for uploading assets (e.g. MeilleursAgents/terraform-provider-ansiblevault) |
-| GIT_TAG | The new version to release (e.g. v1.0.0) |
-| RELEASE_NAME | The version name (most of the time, the git tag) |
-
-```bash
-git tag "${GIT_TAG}"
-./script/release clean build release clean
 ```
 
 ## Contribution
 
 You have to enable [Go modules](https://github.com/golang/go/wiki/Modules) for compiling this project.
+
+Git hooks are availables for avoiding mistakes and ensure code quality, you can install them with:
+
+```bash
+make config
+```
+
+## Build and Deploy
+
+You need a [Github OAuth Token](https://github.com/settings/tokens/new) for doing a GitHub release.
+
+```bash
+make github
+```
 
 ## License
 
