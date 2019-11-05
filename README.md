@@ -56,6 +56,31 @@ data "ansiblevault_path" "api_key" {
 ${data.ansiblevault_path.api_key.value} will contain value of `USER_PASSWORD` stored in "/home/username/infra/ansible/passwords.yml"
 ```
 
+ansiblevault_string example:
+
+---
+
+```tf
+provider "ansiblevault" {
+  vault_pass  = "/home/username/.vault_pass.txt"
+  root_folder = "/home/username/infra/ansible/"
+}
+
+data "ansiblevault_string" "api_key" {
+  encrypted = <<EOF
+$ANSIBLE_VAULT;1.1;AES256
+65346463633165666232636636346631626565616132653339343961656336643930323937313231
+3436383237633937636435636366386563313233366630380a316535376661653933373836633130
+30336130396635363830373135643261346437366235303463643538336561356534666161353233
+6133626433333965320a323966396162656332386265306539666436643033653466636335363363
+35656432663266353133623834653735656534346639623233623531363332373461
+EOF
+  key = "API_KEY"
+}
+
+${data.ansiblevault_string.api_key.value} will contain value of `API_KEY` pass in argument vault string.
+```
+
 ## Documentation
 
 ### Provider
