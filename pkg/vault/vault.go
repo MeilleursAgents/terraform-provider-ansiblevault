@@ -98,6 +98,11 @@ func (a App) InPath(vaultPath string, key string) (string, error) {
 	return a.getVaultKey(path.Join(a.rootFolder, vaultPath), key, ansible_vault.DecryptFile)
 }
 
+// InString retrieves given key in vault file
+func (a App) InString(rawVault string, key string) (string, error) {
+	return a.getVaultKey(rawVault, key, ansible_vault.Decrypt)
+}
+
 func sanitize(word string) string {
 	wordTrim := strings.TrimSpace(word)
 
