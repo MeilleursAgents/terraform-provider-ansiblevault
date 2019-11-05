@@ -115,7 +115,7 @@ You need following environment variables for doing a release. If not set, the `r
 
 ```bash
 git tag "${GIT_TAG}"
-GITHUB_REPOSITORY=MeilleursAgents/terraform-provider-ansiblevault ./script/release
+./script/release clean build release clean
 ```
 
 ## Contribution

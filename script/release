@@ -1,21 +1,60 @@
 #!/usr/bin/env bash
 
 set -o nounset -o pipefail -o errexit
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-readonly OUTPUT_DIR="${SCRIPT_DIR}/../dist"
-readonly OUTPUT_TXT="output.txt"
-readonly TARGETS=('linux/amd64' 'linux/386' 'darwin/amd64')
 
 read_variable_if_required() {
+  local SECRET_ARG=""
+  if [[ "${3:-}" == "secret" ]]; then
+    SECRET_ARG="-s"
+  fi
+
   if [[ -z "${!1:-}" ]]; then
-    read -p "${2:-${1}=}" "${1}"
+    read ${SECRET_ARG?} -r -p "${1}${2:+ [${2}]}=" READ_VALUE
+    eval "${1}=${READ_VALUE:-${2}}"
+
+    if [[ "${SECRET_ARG}" == "-s" ]]; then
+      printf "\n"
+    fi
+  elif [[ "${SECRET_ARG}" != "-s" ]]; then
+    printf "%s=%s\n" "${1}" "${!1}"
   else
-    echo "${1}="${!1}
+    printf "Using secret %s\n" "${1}"
   fi
 }
 
+git_root() {
+  if [[ "$(git rev-parse --is-inside-work-tree 2>&1)" != "true" ]]; then
+    pwd
+    return
+  fi
+
+  git rev-parse --show-toplevel
+}
+
+get_github_repository() {
+  if [[ "$(git rev-parse --is-inside-work-tree 2>&1)" != "true" ]]; then
+    return
+  fi
+
+  local REMOTE_URL
+  REMOTE_URL="$(git remote get-url --push "$(git remote show | head -1)")"
+
+  if [[ "${REMOTE_URL}" =~ ^.*@.*:(.*)\/(.*).git$ ]]; then
+    echo "${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+  fi
+}
+
+get_last_tag() {
+  if [[ "$(git rev-parse --is-inside-work-tree 2>&1)" != "true" ]]; then
+    return
+  fi
+
+  git describe --tag 2> /dev/null | awk -F "-" '{print $1}'
+}
+
 clean() {
+  echo -e "${BLUE}Cleaning ${OUTPUT_DIR}${RESET}"
+
   rm -rf "${OUTPUT_DIR}"
   mkdir "${OUTPUT_DIR}"
 }
@@ -26,16 +65,27 @@ build() {
     return 1
   fi
 
-  local GITHUB_REPOSITORY_PATH="github.com/${GITHUB_REPOSITORY}"
-  local BUILD_DATE=$(date "+%Y-%m-%d_%H:%M:%S")
+  read_variable_if_required GIT_TAG "$(get_last_tag)"
+  read_variable_if_required GITHUB_REPOSITORY "$(get_github_repository)"
 
-  for os_arch in "${TARGETS[@]}"; do
-    IFS='/' read -ra context <<< "${os_arch}"
+  local BUILD_DATE
+  BUILD_DATE=$(date "+%Y-%m-%d_%H:%M:%S")
+  local GITHUB_REPOSITORY_PATH="github.com/${GITHUB_REPOSITORY}"
+  local TARGETS=('linux/amd64' 'linux/386' 'darwin/amd64')
+
+  for OS_ARCH in "${TARGETS[@]}"; do
+    IFS='/' read -ra context <<< "${OS_ARCH}"
 
     local GOOS="${context[0]}"
     local GOARCH="${context[1]}"
 
-    GOOS="${GOOS}" GOARCH="${GOARCH}" CGO_ENABLED=0 go build -ldflags="-s -w -X ${GITHUB_REPOSITORY_PATH}.Version=${GIT_TAG} -X ${GITHUB_REPOSITORY_PATH}.BuildDate=${BUILD_DATE}" -installsuffix nocgo -o "${OUTPUT_DIR}/${1}_${GOOS}_${GOARCH}_${GIT_TAG}" "${SCRIPT_DIR}/../${2}"
+    (
+      export GOOS="${GOOS}"
+      export GOARCH="${GOARCH}"
+      export CGO_ENABLED=0
+      echo -e "${BLUE}Building binary ${1}_${GOOS}_${GOARCH} to ${OUTPUT_DIR}${RESET}"
+      go build -ldflags="-s -w -X ${GITHUB_REPOSITORY_PATH}.Version=${GIT_TAG} -X ${GITHUB_REPOSITORY_PATH}.BuildDate=${BUILD_DATE}" -installsuffix nocgo -o "${OUTPUT_DIR}/${1}_${GOOS}_${GOARCH}_${GIT_TAG}" "${2}"
+    )
   done
 }
 
@@ -45,77 +95,112 @@ get_release_body() {
     return 1
   fi
 
-  local PREVIOUS_TAG=$(git tag --sort=-taggerdate | grep -v "${1}" | head -n 1)
+  local PREVIOUS_TAG
+  PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -v "${1}" | head -n 1)
 
   git log --no-merges --pretty=format:'%h %s' "${1}...${PREVIOUS_TAG}" | awk '!a[substr($0,8)]++' | awk '{printf "* %s\\n",$0}'
 }
 
 release() {
-  local RED='\033[0;31m'
-  local GREEN='\033[0;32m'
-  local BLUE='\033[0;34m'
-  local RESET='\033[0m'
+  read_variable_if_required GITHUB_OAUTH_TOKEN "" "secret"
+  read_variable_if_required GITHUB_REPOSITORY "$(get_github_repository)"
+  read_variable_if_required GIT_TAG "$(get_last_tag)"
+  read_variable_if_required RELEASE_NAME "$(get_last_tag)"
 
   echo -e "${BLUE}Creating release ${GIT_TAG} for ${GITHUB_REPOSITORY}...${RESET}"
 
-  local BODY=$(get_release_body "${GIT_TAG}" | sed 's|"|'"'"'|g')
+  local HTTP_OUTPUT="http_output.txt"
+  local HTTP_STATUS
+
+  local BODY
+  BODY=$(get_release_body "${GIT_TAG}" | sed 's|"|'"'"'|g')
   echo -e "${GREEN}${BODY}${RESET}"
 
-  echo
-  local HTTP_STATUS=$(curl \
+  local CLIENT_ARGS=("curl" "-q" "-sS" "-o" "${HTTP_OUTPUT}" "-w" "%{http_code}" "-H" "Authorization: token ${GITHUB_OAUTH_TOKEN}")
+
+  HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
     -H "Content-Type: application/json" \
-    -H "Authorization: token ${GITHUB_OAUTH_TOKEN}" \
     -X POST \
-    -o "${OUTPUT_TXT}" \
-    -w "%{http_code}" \
     "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
     -d "{
       \"tag_name\": \"${GIT_TAG}\",
       \"name\": \"${RELEASE_NAME}\",
       \"body\": \"${BODY}\"
-    }")
+    }")"
 
   if [[ "${HTTP_STATUS}" != "201" ]]; then
      echo -e "${RED}Failed to create release${RESET}"
-     cat "${OUTPUT_TXT}"
-     rm "${OUTPUT_TXT}"
+     cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
      exit 1
   fi
 
-  local response_url=$(python -c "import json; data = json.load(open(\"${OUTPUT_TXT}\")); print(data[\"upload_url\"]);" | sed 's|{.*||')
-  rm "${OUTPUT_TXT}"
+  local RESPONSE_URL
+  RESPONSE_URL=$(python -c "import json; data = json.load(open('${HTTP_OUTPUT}')); print(data['upload_url']);" | sed 's|{.*||')
+  rm "${HTTP_OUTPUT}"
 
   for asset in "${OUTPUT_DIR}"/*; do
     echo -e "${BLUE}Uploading asset ${asset}...${RESET}"
-    echo
 
-    local HTTP_STATUS=$(curl \
+    HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
       -H "Content-Type: application/x-executable" \
-      -H "Authorization: token ${GITHUB_OAUTH_TOKEN}" \
       -X POST \
-      -o "${OUTPUT_TXT}" \
-      -w "%{http_code}" \
-      "${response_url}?name=$(basename ${asset})" \
-      --data-binary "@${asset}")
+      "${RESPONSE_URL}?name=$(basename "${asset}")" \
+      --data-binary "@${asset}"
+    )"
 
     if [[ "${HTTP_STATUS}" != "201" ]]; then
        echo -e "${RED}Failed to upload asset ${asset}${RESET}"
-       cat "${OUTPUT_TXT}"
-       rm "${OUTPUT_TXT}"
+       cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
        exit 1
     fi
-  done
 
-  rm "${OUTPUT_TXT}"
+    rm "${HTTP_OUTPUT}"
+  done
 
   echo -e "${GREEN}Done!${RESET}"
 }
 
-read_variable_if_required GITHUB_OAUTH_TOKEN
-read_variable_if_required GITHUB_REPOSITORY
-read_variable_if_required GIT_TAG
-read_variable_if_required RELEASE_NAME
+usage() {
+  printf "Usage of %s\n" "${0}"
+  printf "clean\n\tClean output dir %s\n" "${OUTPUT_DIR}"
+  printf "build\n\tBuild binary for %s\n" "${OUTPUT_BINARIES[*]}"
+  printf "release\n\tCreate GitHub release and upload output dir content\n"
+}
 
-clean
-build "terraform-provider-ansiblevault" "main.go"
-release
+main() {
+  local BLUE='\033[0;34m'
+  local GREEN='\033[0;32m'
+  local RED='\033[0;31m'
+  local RESET='\033[0m'
+
+  local ROOT_DIR
+  ROOT_DIR="$(git_root)"
+
+  local OUTPUT_DIR="${ROOT_DIR}/release"
+
+  local OUTPUT_BINARIES
+  mapfile -t OUTPUT_BINARIES < <(go list -f '{{ .Dir }} {{ .Name }}' "${ROOT_DIR}/..." | grep "main" | awk '{print $1}')
+
+  for arg in "${@}"; do
+    case "${arg}" in
+      "build")
+        clean
+        for main in "${OUTPUT_BINARIES[@]}"; do
+          build "$(basename "${main}")" "${main}"
+        done
+        ;;
+      "release")
+        release
+        ;;
+      "clean")
+        clean
+        ;;
+      *)
+        usage
+        ;;
+    esac
+  done
+}
+
+DEFAULT_ARGS=("build" "release" "clean")
+main "${@:-${DEFAULT_ARGS[@]}}"

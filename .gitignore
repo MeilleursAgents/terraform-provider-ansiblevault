@@ -1,7 +1,6 @@
 bin/
-vendor/
+release/
 coverage.txt
 dist/
-output.txt
 examples/terraform/.terraform
 examples/terraform/terraform.tfstate
