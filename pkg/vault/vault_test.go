@@ -6,6 +6,8 @@ import (
 	"path"
 	"reflect"
 	"testing"
+
+	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
 const (
@@ -141,13 +143,14 @@ func TestGetVaultPass(t *testing.T) {
 
 func TestGetVaultKey(t *testing.T) {
 	var cases = []struct {
-		intention  string
-		vaultPass  string
-		rootFolder string
-		filename   string
-		key        string
-		want       string
-		wantErr    error
+		intention       string
+		vaultPass       string
+		rootFolder      string
+		filename        string
+		key             string
+		getVaultContent func(string, string) (string, error)
+		want            string
+		wantErr         error
 	}{
 		{
 			"should handle error while reading vault",
@@ -155,6 +158,7 @@ func TestGetVaultKey(t *testing.T) {
 			"ansible",
 			"",
 			"api_key",
+			ansible_vault.DecryptFile,
 			"",
 			errors.New("open notExistingFile.txt: no such file or directory"),
 		},
@@ -164,6 +168,7 @@ func TestGetVaultKey(t *testing.T) {
 			"ansible",
 			"notExistingFile.txt",
 			"api_key",
+			ansible_vault.DecryptFile,
 			"",
 			errors.New("open notExistingFile.txt: no such file or directory"),
 		},
@@ -173,6 +178,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "simple_vault_test.yaml"),
 			"api_key",
+			ansible_vault.DecryptFile,
 			"NOT_IN_CLEAR_TEXT",
 			nil,
 		},
@@ -182,6 +188,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"API_SECRET",
+			ansible_vault.DecryptFile,
 			"password",
 			nil,
 		},
@@ -191,6 +198,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"KEY_NOT_FOUND",
+			ansible_vault.DecryptFile,
 			"",
 			ErrKeyNotFound,
 		},
@@ -200,6 +208,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"API_complex_secret",
+			ansible_vault.DecryptFile,
 			"test:[!\"\"",
 			nil,
 		},
@@ -213,7 +222,7 @@ func TestGetVaultKey(t *testing.T) {
 				return
 			}
 
-			result, err := app.getVaultKey(testCase.filename, testCase.key)
+			result, err := app.getVaultKey(testCase.filename, testCase.key, testCase.getVaultContent)
 
 			failed := false
 

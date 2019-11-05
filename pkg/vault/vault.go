@@ -64,13 +64,13 @@ func (a App) getVaultPass() (string, error) {
 	return strings.TrimRight(string(data), "\n"), nil
 }
 
-func (a App) getVaultKey(filename string, key string) (string, error) {
+func (a App) getVaultKey(filename string, key string, getVaultContent func(string, string) (string, error)) (string, error) {
 	pass, err := a.getVaultPass()
 	if err != nil {
 		return "", err
 	}
 
-	rawVault, err := ansible_vault.DecryptFile(filename, pass)
+	rawVault, err := getVaultContent(filename, pass)
 	if err != nil {
 		return "", err
 	}
@@ -90,12 +90,12 @@ func (a App) getVaultKey(filename string, key string) (string, error) {
 
 // InEnv retrieves given key in environment vault
 func (a App) InEnv(env string, key string) (string, error) {
-	return a.getVaultKey(path.Join(a.rootFolder, fmt.Sprintf("group_vars/tag_%s/vault.yml", env)), key)
+	return a.getVaultKey(path.Join(a.rootFolder, fmt.Sprintf("group_vars/tag_%s/vault.yml", env)), key, ansible_vault.DecryptFile)
 }
 
 // InPath retrieves given key in vault file
 func (a App) InPath(vaultPath string, key string) (string, error) {
-	return a.getVaultKey(path.Join(a.rootFolder, vaultPath), key)
+	return a.getVaultKey(path.Join(a.rootFolder, vaultPath), key, ansible_vault.DecryptFile)
 }
 
 func sanitize(word string) string {
