@@ -146,7 +146,7 @@ func TestGetVaultKey(t *testing.T) {
 		intention       string
 		vaultPass       string
 		rootFolder      string
-		filename        string
+		input           string
 		key             string
 		getVaultContent func(string, string) (string, error)
 		want            string
@@ -222,7 +222,7 @@ func TestGetVaultKey(t *testing.T) {
 				return
 			}
 
-			result, err := app.getVaultKey(testCase.filename, testCase.key, testCase.getVaultContent)
+			result, err := app.getVaultKey(testCase.input, testCase.key, testCase.getVaultContent)
 
 			failed := false
 
@@ -237,7 +237,7 @@ func TestGetVaultKey(t *testing.T) {
 			}
 
 			if failed {
-				t.Errorf("getVaultKey(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
+				t.Errorf("getVaultKey(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.input, testCase.key, result, err, testCase.want, testCase.wantErr)
 			}
 		})
 	}
