@@ -6,6 +6,8 @@ import (
 	"path"
 	"reflect"
 	"testing"
+
+	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
 const (
@@ -141,13 +143,14 @@ func TestGetVaultPass(t *testing.T) {
 
 func TestGetVaultKey(t *testing.T) {
 	var cases = []struct {
-		intention  string
-		vaultPass  string
-		rootFolder string
-		filename   string
-		key        string
-		want       string
-		wantErr    error
+		intention       string
+		vaultPass       string
+		rootFolder      string
+		input           string
+		key             string
+		getVaultContent func(string, string) (string, error)
+		want            string
+		wantErr         error
 	}{
 		{
 			"should handle error while reading vault",
@@ -155,6 +158,7 @@ func TestGetVaultKey(t *testing.T) {
 			"ansible",
 			"",
 			"api_key",
+			ansible_vault.DecryptFile,
 			"",
 			errors.New("open notExistingFile.txt: no such file or directory"),
 		},
@@ -164,6 +168,7 @@ func TestGetVaultKey(t *testing.T) {
 			"ansible",
 			"notExistingFile.txt",
 			"api_key",
+			ansible_vault.DecryptFile,
 			"",
 			errors.New("open notExistingFile.txt: no such file or directory"),
 		},
@@ -173,6 +178,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "simple_vault_test.yaml"),
 			"api_key",
+			ansible_vault.DecryptFile,
 			"NOT_IN_CLEAR_TEXT",
 			nil,
 		},
@@ -182,6 +188,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"API_SECRET",
+			ansible_vault.DecryptFile,
 			"password",
 			nil,
 		},
@@ -191,6 +198,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"KEY_NOT_FOUND",
+			ansible_vault.DecryptFile,
 			"",
 			ErrKeyNotFound,
 		},
@@ -200,6 +208,7 @@ func TestGetVaultKey(t *testing.T) {
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"API_complex_secret",
+			ansible_vault.DecryptFile,
 			"test:[!\"\"",
 			nil,
 		},
@@ -213,7 +222,7 @@ func TestGetVaultKey(t *testing.T) {
 				return
 			}
 
-			result, err := app.getVaultKey(testCase.filename, testCase.key)
+			result, err := app.getVaultKey(testCase.input, testCase.key, testCase.getVaultContent)
 
 			failed := false
 
@@ -228,7 +237,7 @@ func TestGetVaultKey(t *testing.T) {
 			}
 
 			if failed {
-				t.Errorf("getVaultKey(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.filename, testCase.key, result, err, testCase.want, testCase.wantErr)
+				t.Errorf("getVaultKey(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.input, testCase.key, result, err, testCase.want, testCase.wantErr)
 			}
 		})
 	}
@@ -341,6 +350,69 @@ func TestInPath(t *testing.T) {
 
 			if failed {
 				t.Errorf("InPath(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.path, testCase.key, result, err, testCase.want, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func TestInString(t *testing.T) {
+	vaultRaw := `$ANSIBLE_VAULT;1.1;AES256
+61336365316161396566653134393964613564646439313333666233356463336131336537303633
+6239626439383636346130653132326138313437306365310a663961653131373535633431393836
+34353035376531643266383736306338333764373837656131323663396435666332343039666465
+3635613231313833650a346365623861663638313830616564623663386137303735356639313163
+34343639636161656230363030353763623830653838333166623234326334663338`
+
+	var cases = []struct {
+		intention string
+		input     string
+		key       string
+		want      string
+		wantErr   error
+	}{
+		{
+			"simple",
+			vaultRaw,
+			"API_KEY",
+			"NOT_IN_CLEAR_TEXT",
+			nil,
+		},
+		{
+			"invalid format",
+			"novaultformat",
+			"API_KEY",
+			"",
+			errors.New("invalid secret format"),
+		},
+	}
+
+	var failed bool
+
+	for _, testCase := range cases {
+		t.Run(testCase.intention, func(t *testing.T) {
+
+			app, err := New(path.Join(ansibleFolder, "vault_pass_test.txt"), path.Join(ansibleFolder, "group_vars"), "")
+			if err != nil {
+				t.Errorf("unable to create App: %#v", err)
+				return
+			}
+
+			result, err := app.InString(testCase.input, testCase.key)
+
+			failed = false
+
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
+
+			if failed {
+				t.Errorf("InString() = (`%s`, %s), want (`%s`, %s)", result, err, testCase.want, testCase.wantErr)
 			}
 		})
 	}

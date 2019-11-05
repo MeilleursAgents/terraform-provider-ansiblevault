@@ -39,8 +39,9 @@ func Provider() *schema.Provider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"ansiblevault_env":  inEnvResource(),
-			"ansiblevault_path": inPathResource(),
+			"ansiblevault_env":    inEnvResource(),
+			"ansiblevault_path":   inPathResource(),
+			"ansiblevault_string": inStringResource(),
 		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
 			vaultPass := r.Get("vault_pass").(string)
