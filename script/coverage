@@ -2,17 +2,33 @@
 
 set -o nounset -o pipefail -o errexit
 
-MODE="mode: atomic"
+main() {
+  local SCRIPT_DIR
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "${MODE}" > coverage.txt
+  local OUTPUT_TXT="coverage.txt"
+  local COVER_OUTPUT="profile.out"
+  local COVER_MODE="atomic"
+  local MODE="mode: ${COVER_MODE}"
 
-for pkg in $(go list "${PACKAGES:-./...}"); do
-  go test -race -covermode=atomic -coverprofile=profile.out "${pkg}"
+  (
+    cd "${SCRIPT_DIR}/../" || return
 
-  if [[ -f "profile.out" ]]; then
-    cat profile.out | grep -v "${MODE}" >> coverage.txt || true
-    rm profile.out
-  fi
-done
+    echo "${MODE}" > "${OUTPUT_TXT}"
 
-go tool cover -func=coverage.txt
+    for pkg in $(go list "${PACKAGES:-./...}"); do
+      go test -race -covermode="${COVER_MODE}" -coverprofile="${COVER_OUTPUT}" "${pkg}"
+
+      if [[ -f "${COVER_OUTPUT}" ]]; then
+        grep -v "${MODE}" "${COVER_OUTPUT}" >> "${OUTPUT_TXT}" || true
+        rm "${COVER_OUTPUT}"
+      fi
+    done
+
+    if [[ "$(wc -l < "${OUTPUT_TXT}")" -ne 1 ]]; then
+       go tool cover -func="${OUTPUT_TXT}"
+    fi
+  )
+}
+
+main "${@:-}"
