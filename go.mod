@@ -1,6 +1,6 @@
 module github.com/MeilleursAgents/terraform-provider-ansiblevault
 
-go 1.13
+go 1.12
 
 require (
 	cloud.google.com/go v0.47.0 // indirect
@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/hcl2 v0.0.0-20190909202536-66c59f909e25 // indirect
 	github.com/hashicorp/hil v0.0.0-20190212132231-97b3a9cdfa93 // indirect
-	github.com/hashicorp/terraform v0.12.13
+	github.com/hashicorp/terraform v0.12.15
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
