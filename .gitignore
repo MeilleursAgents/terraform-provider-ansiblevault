@@ -2,5 +2,5 @@ bin/
 release/
 coverage.txt
 dist/
-examples/terraform/.terraform
-examples/terraform/terraform.tfstate
+.terraform
+terraform.tfstate*
