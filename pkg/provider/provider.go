@@ -31,12 +31,6 @@ func Provider() *schema.Provider {
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ANSIBLE_ROOT_FOLDER", nil),
 			},
-			"key_separator": {
-				Type:        schema.TypeString,
-				Description: "Separator of key/value pair in Ansible vault",
-				Optional:    true,
-				Default:     ":",
-			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"ansiblevault_env":    inEnvResource(),
@@ -46,9 +40,8 @@ func Provider() *schema.Provider {
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
 			vaultPass := r.Get("vault_pass").(string)
 			rootFolder := r.Get("root_folder").(string)
-			keySeparator := r.Get("key_separator").(string)
 
-			return vault.New(vaultPass, rootFolder, keySeparator)
+			return vault.New(vaultPass, rootFolder)
 		},
 	}
 }

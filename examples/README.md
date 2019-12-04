@@ -21,7 +21,7 @@ changes, it is recommended to add version = "..." constraints to the
 corresponding provider blocks in configuration, with the constraint strings
 suggested below.
 
-* provider.ansiblevault: version = "~> 1.2"
+* provider.ansiblevault: version = "~> 1.3"
 
 Terraform has been successfully initialized!
 
@@ -35,22 +35,16 @@ commands will detect it and remind you to do so if necessary.
 
 $ terraform apply
 data.ansiblevault_path.path: Refreshing state...
+data.ansiblevault_string.raw_string: Refreshing state...
 data.ansiblevault_env.env: Refreshing state...
+data.ansiblevault_string.key_string: Refreshing state...
 
 Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-env = {
-  "env" = "prod"
-  "id" = "2019-10-18 11:08:22.906240562 +0000 UTC"
-  "key" = "API_KEY"
-  "value" = "PROD_KEEP_IT_SECRET"
-}
-path = {
-  "id" = "2019-10-18 11:08:22.906266316 +0000 UTC"
-  "key" = "API_KEY"
-  "path" = "../ansible/simple_vault_test.yaml"
-  "value" = "NOT_IN_CLEAR_TEXT"
-}
+env = PROD_KEEP_IT_SECRET
+key_string = PROD_KEEP_IT_SECRET
+path = NOT_IN_CLEAR_TEXT
+raw_string = PROD_KEEP_IT_SECRET
 ```

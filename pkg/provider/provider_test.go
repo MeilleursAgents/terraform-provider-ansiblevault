@@ -20,7 +20,7 @@ func TestProvider(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 			if result := Provider().InternalValidate(); result != testCase.want {
-				t.Errorf("Provider() = %#v, want %#v", result, testCase.want)
+				t.Errorf("Provider() = %s, want %s", result, testCase.want)
 			}
 		})
 	}
