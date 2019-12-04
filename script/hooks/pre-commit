@@ -2,50 +2,97 @@
 
 set -o nounset -o pipefail
 
-main() {
-  local BLUE='\033[0;34m'
-  local RED='\033[0;31m'
-  local YELLOW='\033[33m'
-  local RESET='\033[0m'
+run_command() {
+  if ! "${@}"; then
+    printf "%bCommit Failed%b\n" "${RED}" "${RESET}"
+    printf "%bPlease fix errors and try committing again.%b\n" "${RED}" "${RESET}"
 
-  local PASS=0
+    exit 1
+  fi
+}
+
+get_files() {
+  git diff --name-only --diff-filter=ACMR --cached -- "${@}" | tr '\n' ' ' | sed "s| *$||g"
+}
+
+get_diff() {
+  git diff --name-only --diff-filter=ACMR
+}
+
+diff_check() {
+  if ! [[ "${1}" == "$(get_diff)" ]]; then
+    printf "%bPre-commit has changed files%b\n" "${RED}" "${RESET}"
+    printf "%bConsider adding updated file with %bgit add -i \&\& git commit --amend%b\n" "${RED}" "${BLUE}" "${RESET}"
+  fi
+}
+
+golang_check() {
   local GO_FILES
-  GO_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.go$" | tr '\n' ' ')
-  local INITIAL_DIFF
-  INITIAL_DIFF=$(git diff --name-only --diff-filter=ACMR)
+  GO_FILES=$(get_files "*.go")
 
-  if [[ "${PASS}" == "0" ]] && [[ "${GO_FILES}" != "" ]]; then
-      echo -e "${BLUE}Formating golang files${RESET}"
-      GO_FILES="${GO_FILES}" make --silent format
-      PASS=$?
+  if [[ -n "${GO_FILES:-}" ]]; then
+    printf "%bFormating golang files%b\n" "${BLUE}" "${RESET}"
+    GO_FILES="${GO_FILES}" run_command make --silent format
+
+    printf "%bLinting golang packages%b\n" "${BLUE}" "${RESET}"
+    run_command make --silent style
   fi
+}
 
-  if [[ "${PASS}" == "0" ]] && [[ "${GO_FILES}" != "" ]]; then
-      echo -e "${BLUE}Linting golang packages${RESET}"
-      make --silent lint
-      PASS=$?
+terraform_check() {
+  local TERRAFORM_FILES
+  TERRAFORM_FILES=$(get_files "*.tf")
+
+  if [[ -n "${TERRAFORM_FILES}" ]]; then
+      printf "%bFormating terraform files%b\n" "${BLUE}" "${RESET}"
+
+      for file in ${TERRAFORM_FILES}; do
+        run_command terraform fmt "$(dirname "${file}")"
+      done
   fi
+}
 
-  if ! [[ "$PASS" == "0" ]]; then
-      echo -e "${RED}COMMIT FAILED${RESET}"
-      echo -e "${RED}Last check failed during pre-commit. Please fix errors and try committing again.${RESET}"
+yaml_check() {
+  local YAML_FILES
+  YAML_FILES=$(get_files \*.y{,a}ml)
 
-      exit 1
+  if [[ -n "${YAML_FILES}" ]]; then
+      printf "%bLinting yaml files%b\n" "${BLUE}" "${RESET}"
+      run_command yamllint -d "{rules: {line-length: disable}}" ${YAML_FILES[@]}
   fi
+}
 
-  local FINAL_DIFF
-  FINAL_DIFF=$(git diff --name-only --diff-filter=ACMR)
+tag_check() {
+  local PREVIOUS_TAG
+  PREVIOUS_TAG="$(git tag --sort=-creatordate | head -n 1)"
 
-  if ! [[ "${INITIAL_DIFF}" == "${FINAL_DIFF}" ]]; then
-      echo -e "${RED}Pre-commit has changes files${RESET}"
-      echo -e "${RED}Consider adding updated file with ${BLUE}git add -i \&\& git commit --amend${RESET}"
+  if [[ -z "${PREVIOUS_TAG:-}" ]]; then
+    return
   fi
 
   local COMMITS_SINCE_LAST_TAG
-  COMMITS_SINCE_LAST_TAG="$(git rev-list --count "$(git tag --sort=-creatordate | head -n 1)"..HEAD)"
+  COMMITS_SINCE_LAST_TAG="$(git rev-list --count "${PREVIOUS_TAG}..HEAD")"
+
   if [[ "${COMMITS_SINCE_LAST_TAG}" -ne 0 ]]; then
-    echo -e "${YELLOW}${COMMITS_SINCE_LAST_TAG} commits since last tag${RESET}"
+    printf "%b%d commits since last tag%b\n" "${YELLOW}" "${COMMITS_SINCE_LAST_TAG}" "${RESET}"
   fi
+}
+
+main() {
+  local RED='\033[0;31m'
+  local BLUE='\033[0;34m'
+  local YELLOW='\033[33m'
+  local RESET='\033[0m'
+
+  local INITIAL_DIFF
+  INITIAL_DIFF=$(get_diff)
+
+  golang_check
+  terraform_check
+  yaml_check
+
+  diff_check "${INITIAL_DIFF}"
+  tag_check
 
   exit 0
 }

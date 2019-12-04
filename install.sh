@@ -2,7 +2,7 @@
 
 github_last_release() {
   if [[ "${#}" -ne 1 ]]; then
-    echo "Usage: github_last_release owner/repo"
+    printf "%bUsage: github_last_release owner/repo%b\n" "${RED}" "${RESET}"
     return 1
   fi
 
@@ -10,11 +10,11 @@ github_last_release() {
   local RESET="\033[0m"
 
   local OUTPUT_TXT="output.txt"
-  local CLIENT_ARGS=("curl" "-q" "-sS" "-o" "${OUTPUT_TXT}" "-w" "%{http_code}")
 
-  local LATEST_RELEASE="$("${CLIENT_ARGS[@]}" "https://api.github.com/repos/${1}/releases/latest")"
+  local LATEST_RELEASE
+  LATEST_RELEASE="$(curl -q -sSL --max-time 30 -o ${OUTPUT_TXT} -w "%{http_code}" "https://api.github.com/repos/${1}/releases/latest")"
   if [[ "${LATEST_RELEASE}" != "200" ]]; then
-    echo -e "${RED}Unable to list latest release for ${1}${RESET}"
+    printf "%bUnable to list latest release for %s%b\n" "${RED}" "${1}" "${RESET}"
     cat "${OUTPUT_TXT}" && rm "${OUTPUT_TXT}"
     return
   fi
@@ -27,7 +27,8 @@ main() {
   local BLUE="\033[34m"
   local RESET="\033[0m"
 
-  local PLUGIN_VERSION="$(github_last_release MeilleursAgents/terraform-provider-ansiblevault)"
+  local PLUGIN_VERSION
+  PLUGIN_VERSION="$(github_last_release MeilleursAgents/terraform-provider-ansiblevault)"
 
   OS=$(uname -s | tr '[:upper:]' '[:lower:]')
   ARCH=$(uname -m | tr '[:upper:]' '[:lower:]')
@@ -38,13 +39,14 @@ main() {
 
   local PLUGIN_DIR="${HOME}/.terraform.d/plugins/${OS}_${ARCH}/"
 
-  echo -e "${BLUE}Installing terraform-provider-ansiblevault version ${PLUGIN_VERSION} into ${PLUGIN_DIR}${RESET}"
+  printf "%bInstalling terraform-provider-ansiblevault version %s into %s%b\n" "${BLUE}" "${PLUGIN_VERSION}" "${PLUGIN_DIR}" "${RESET}"
 
   mkdir -p "${PLUGIN_DIR}"
-  pushd "${PLUGIN_DIR}" || return
-  curl -q -sS -Lo "terraform-provider-ansiblevault_${PLUGIN_VERSION}" "https://github.com/MeilleursAgents/terraform-provider-ansiblevault/releases/download/${PLUGIN_VERSION}/terraform-provider-ansiblevault_${OS}_${ARCH}_${PLUGIN_VERSION}"
-  chmod +x "terraform-provider-ansiblevault_${PLUGIN_VERSION}"
-  popd || return
+  (
+    cd "${PLUGIN_DIR}" || return
+    curl -q -sSL -o "terraform-provider-ansiblevault_${PLUGIN_VERSION}" "https://github.com/MeilleursAgents/terraform-provider-ansiblevault/releases/download/${PLUGIN_VERSION}/terraform-provider-ansiblevault_${OS}_${ARCH}_${PLUGIN_VERSION}"
+    chmod +x "terraform-provider-ansiblevault_${PLUGIN_VERSION}"
+  )
 }
 
 main

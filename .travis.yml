@@ -1,21 +1,23 @@
+---
+
 language: go
 go:
-- 1.12.x
-- master
+  - 1.12.x
+  - master
 env:
   global:
-  - GO111MODULE=on
-  - GOOS=linux
+    - GO111MODULE=on
+    - GOOS=linux
   jobs:
-  - GOARCH=amd64
-  - GOARCH=arm64
-  - GOARCH=386
+    - GOARCH=amd64
+    - GOARCH=arm64
+    - GOARCH=386
 after_success:
-- bash <(curl -s https://codecov.io/bash)
+  bash <(curl -s https://codecov.io/bash)
 
 jobs:
   allow_failures:
-  - go: master
+    - go: master
 
 notifications:
   email: false
