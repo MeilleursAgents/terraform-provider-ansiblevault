@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	// ErrNoVaultPass occurs when vault pass file is blank
-	ErrNoVaultPass = errors.New("no vault pass file")
+	// ErrNoVaultPass occurs when vault pass file or value are empty
+	ErrNoVaultPass = errors.New("no vault password file or vault pass provided")
 
 	// ErrNoRootFolder occurs when root folder is blank
 	ErrNoRootFolder = errors.New("no root folder")
@@ -24,28 +24,42 @@ var (
 
 // App of package
 type App struct {
-	vaultPass  string
-	rootFolder string
+	vaultPassword string
+	rootFolder    string
 }
 
 // New creates new App from Config
-func New(vaultPass, rootFolder string) (*App, error) {
-	if vaultPass == "" {
-		return nil, ErrNoVaultPass
-	}
-
+func New(vaultPassword string, rootFolder string) (*App, error) {
 	if rootFolder == "" {
 		return nil, ErrNoRootFolder
 	}
 
 	return &App{
-		vaultPass:  vaultPass,
-		rootFolder: rootFolder,
+		vaultPassword: vaultPassword,
+		rootFolder:    rootFolder,
 	}, nil
 }
 
-func (a App) getVaultPass() (string, error) {
-	data, err := ioutil.ReadFile(a.vaultPass)
+// GetVaultPassword is a helper for retrieve vault password value
+func GetVaultPassword(vaultPath string, vaultPass string) (string, error) {
+	if vaultPath == "" && vaultPass == "" {
+		return "", ErrNoVaultPass
+	}
+
+	if vaultPass != "" {
+		return vaultPass, nil
+	}
+
+	pass, err := getVaultValueAtPath(vaultPath)
+	if err != nil {
+		return "", ErrNoVaultPass
+	}
+
+	return pass, nil
+}
+
+func getVaultValueAtPath(vaultPath string) (string, error) {
+	data, err := ioutil.ReadFile(vaultPath)
 	if err != nil {
 		return "", err
 	}
@@ -54,12 +68,7 @@ func (a App) getVaultPass() (string, error) {
 }
 
 func (a App) getVaultKey(filename string, key string, getVaultContent func(string, string) (string, error)) (string, error) {
-	pass, err := a.getVaultPass()
-	if err != nil {
-		return "", err
-	}
-
-	rawVault, err := getVaultContent(filename, pass)
+	rawVault, err := getVaultContent(filename, a.vaultPassword)
 	if err != nil {
 		return "", err
 	}

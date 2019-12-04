@@ -19,11 +19,17 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
+			"vault_path": {
+				Type:        schema.TypeString,
+				Description: "Path to ansible vault password file (cf. https://docs.ansible.com/ansible/latest/user_guide/vault.html#providing-vault-passwords)",
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ANSIBLE_VAULT_PASSWORD_FILE", nil),
+			},
 			"vault_pass": {
 				Type:        schema.TypeString,
-				Description: "Ansible vault pass file",
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ANSIBLE_VAULT_PASS_FILE", nil),
+				Description: "Ansible vault pass value",
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ANSIBLE_VAULT_PASS", nil),
 			},
 			"root_folder": {
 				Type:        schema.TypeString,
@@ -38,10 +44,16 @@ func Provider() *schema.Provider {
 			"ansiblevault_string": inStringResource(),
 		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
+			vaultPath := r.Get("vault_path").(string)
 			vaultPass := r.Get("vault_pass").(string)
 			rootFolder := r.Get("root_folder").(string)
 
-			return vault.New(vaultPass, rootFolder)
+			pass, err := vault.GetVaultPassword(vaultPath, vaultPass)
+			if err != nil {
+				return nil, err
+			}
+
+			return vault.New(pass, rootFolder)
 		},
 	}
 }

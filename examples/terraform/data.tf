@@ -21,6 +21,7 @@ EOF
 }
 
 data "ansiblevault_string" "raw_string" {
+  provider  = ansiblevault.password_file
   encrypted = <<EOF
 $ANSIBLE_VAULT;1.1;AES256
 66306134666665663135666633346565363436333837376232613938393164353936333863653961
