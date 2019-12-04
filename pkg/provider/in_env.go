@@ -20,7 +20,7 @@ func inEnvResource() *schema.Resource {
 			"key": {
 				Type:        schema.TypeString,
 				Description: "Vault key searched",
-				Required:    true,
+				Optional:    true,
 			},
 			"value": {
 				Computed:    true,

@@ -4,16 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path"
-	"strconv"
 	"strings"
 
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
-)
-
-const (
-	defaultKeySeparator = ":"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -29,13 +24,12 @@ var (
 
 // App of package
 type App struct {
-	vaultPass    string
-	rootFolder   string
-	keySeparator string
+	vaultPass  string
+	rootFolder string
 }
 
 // New creates new App from Config
-func New(vaultPass, rootFolder, keySeparator string) (*App, error) {
+func New(vaultPass, rootFolder string) (*App, error) {
 	if vaultPass == "" {
 		return nil, ErrNoVaultPass
 	}
@@ -44,14 +38,9 @@ func New(vaultPass, rootFolder, keySeparator string) (*App, error) {
 		return nil, ErrNoRootFolder
 	}
 
-	if keySeparator == "" {
-		keySeparator = defaultKeySeparator
-	}
-
 	return &App{
-		vaultPass:    vaultPass,
-		rootFolder:   rootFolder,
-		keySeparator: keySeparator,
+		vaultPass:  vaultPass,
+		rootFolder: rootFolder,
 	}, nil
 }
 
@@ -75,13 +64,19 @@ func (a App) getVaultKey(filename string, key string, getVaultContent func(strin
 		return "", err
 	}
 
-	for _, n := range strings.Split(rawVault, "\n") {
-		parts := strings.SplitN(n, a.keySeparator, 2)
+	// trim of carriage return for easier use
+	if len(strings.TrimSpace(key)) == 0 {
+		return strings.Trim(rawVault, "\n"), nil
+	}
 
-		if len(parts) > 1 {
-			if strings.EqualFold(parts[0], key) {
-				return sanitize(parts[1]), nil
-			}
+	var vaultContent map[string]string
+	if err := yaml.Unmarshal([]byte(rawVault), &vaultContent); err != nil {
+		return "", err
+	}
+
+	for vaultKey, vaultValue := range vaultContent {
+		if strings.EqualFold(key, vaultKey) {
+			return strings.Trim(vaultValue, "\n"), nil
 		}
 	}
 
@@ -101,24 +96,4 @@ func (a App) InPath(vaultPath string, key string) (string, error) {
 // InString retrieves given key in vault file
 func (a App) InString(rawVault string, key string) (string, error) {
 	return a.getVaultKey(rawVault, key, ansible_vault.Decrypt)
-}
-
-func sanitize(word string) string {
-	wordTrim := strings.TrimSpace(word)
-
-	s, err := strconv.Unquote(wordTrim)
-	if err != nil {
-		wordTrimLen := len(wordTrim)
-
-		// we arrive here with integer of non protected string or single quoted string
-		if wordTrimLen > 2 && wordTrim[0] == wordTrim[wordTrimLen-1] && wordTrim[0] == byte('\'') {
-			return wordTrim[1 : wordTrimLen-1]
-		}
-
-		// we arrive here with integer of non protected string
-		log.Printf("[WARNING] unable to unquote value: %s", err)
-		return wordTrim
-	}
-
-	return s
 }

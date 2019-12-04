@@ -55,7 +55,7 @@ func TestInPathRead(t *testing.T) {
 				return
 			}
 
-			vaultApp, err := vault.New(path.Join(ansibleFolder, "vault_pass_test.txt"), ansibleFolder, "")
+			vaultApp, err := vault.New(path.Join(ansibleFolder, "vault_pass_test.txt"), ansibleFolder)
 			if err != nil {
 				t.Errorf("unable to create vault app: %#v", err)
 				return
@@ -77,7 +77,7 @@ func TestInPathRead(t *testing.T) {
 			}
 
 			if failed {
-				t.Errorf("InPathRead(%#v) = (`%s`, %#v), want (`%s`, %#v)", data, result, err, testCase.want, testCase.wantErr)
+				t.Errorf("InPathRead() = (`%s`, %#v), want (`%s`, %#v)", result, err, testCase.want, testCase.wantErr)
 			}
 		})
 	}
