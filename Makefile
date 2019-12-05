@@ -25,27 +25,28 @@ help: Makefile
 ## name: Output name
 .PHONY: name
 name:
-	@echo -n $(APP_NAME)
+	@printf "%s" "$(APP_NAME)"
 
 ## version: Output sha1 of last commit
 .PHONY: version
 version:
-	@echo -n $(VERSION)
+	@printf "%s" "$(VERSION)"
 
 ##app: Build app with dependencies download
 .PHONY: app
-app: deps go
+app: init dev
 
-## go: Build app
-.PHONY: go
-go: format lint test build
+## dev: Build app
+.PHONY: dev
+dev: format style test build
 
-## deps: Download dependencies
-.PHONY: deps
-deps:
+## init: Download dependencies
+.PHONY: init
+init:
 	go get github.com/kisielk/errcheck
 	go get golang.org/x/lint/golint
 	go get golang.org/x/tools/cmd/goimports
+	go mod tidy
 
 ## format: Format code
 .PHONY: format
@@ -53,9 +54,9 @@ format:
 	goimports -w $(GO_FILES)
 	gofmt -s -w $(GO_FILES)
 
-## lint: Lint code
-.PHONY: lint
-lint:
+## style: Lint code
+.PHONY: style
+style:
 	golint $(PACKAGES)
 	errcheck -ignoretests $(PACKAGES)
 	go vet $(PACKAGES)
@@ -68,23 +69,23 @@ test:
 ## build: Build binary
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build -ldflags="-s -w" -installsuffix nocgo -o $(BINARY_PATH)_$(VERSION) $(LIB_SOURCE)
+	CGO_ENABLED=0 go build -ldflags="-s -w" -installsuffix nocgo -o "$(BINARY_PATH)_$(VERSION)" "$(LIB_SOURCE)"
 
 # install: Install plugin into terraform plugin system
 .PHONY: install
 install:
-	mkdir -p $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/
-	cp $(BINARY_PATH)_$(VERSION) $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
+	mkdir -p "$(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/"
+	cp "$(BINARY_PATH)_$(VERSION)" "$(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)"
 
 # uninstall: Remove plugin from terraform plugin system
 .PHONY: uninstall
 uninstall:
-	rm $(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)
+	rm "$(TERRAFORM_PLUGIN_FOLDER)/$(GO_OS)_$(GO_ARCH)/$(APP_NAME)_$(VERSION)"
 
 # clean: Delete binary
 .PHONY: clean
 clean:
-	rm $(BINARY_PATH)_$(VERSION)
+	rm "$(BINARY_PATH)_$(VERSION)"
 
 ## github: Build and deploy on github
 .PHONY: github
