@@ -6,7 +6,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/MeilleursAgents/terraform-provider-ansiblevault/pkg/vault"
+	"github.com/MeilleursAgents/terraform-provider-ansiblevault/v2/pkg/vault"
 )
 
 func TestInEnvRead(t *testing.T) {

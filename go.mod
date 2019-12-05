@@ -1,4 +1,4 @@
-module github.com/MeilleursAgents/terraform-provider-ansiblevault
+module github.com/MeilleursAgents/terraform-provider-ansiblevault/v2
 
 go 1.12
 
