@@ -44,7 +44,7 @@ func Provider() *schema.Provider {
 			"ansiblevault_string": inStringResource(),
 		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
-			return configure(safeString("vault_path"), safeString("vault_pass"), safeString(("root_folder")))
+			return configure(safeString(r.Get("vault_path")), safeString(r.Get("vault_pass")), safeString(r.Get("root_folder")))
 		},
 	}
 }
