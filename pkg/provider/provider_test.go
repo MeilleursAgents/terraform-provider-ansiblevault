@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/MeilleursAgents/terraform-provider-ansiblevault/pkg/vault"
+	"github.com/MeilleursAgents/terraform-provider-ansiblevault/v2/pkg/vault"
 )
 
 const (

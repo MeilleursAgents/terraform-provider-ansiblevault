@@ -21,7 +21,7 @@ changes, it is recommended to add version = "..." constraints to the
 corresponding provider blocks in configuration, with the constraint strings
 suggested below.
 
-* provider.ansiblevault: version = "~> 1.3"
+* provider.ansiblevault: version = "~> 2.0"
 
 Terraform has been successfully initialized!
 
