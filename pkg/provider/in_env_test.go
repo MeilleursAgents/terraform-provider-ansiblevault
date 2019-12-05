@@ -55,7 +55,7 @@ func TestInEnvRead(t *testing.T) {
 				return
 			}
 
-			vaultApp, err := vault.New(path.Join(ansibleFolder, "vault_pass_test.txt"), ansibleFolder)
+			vaultApp, err := vault.New("secret", ansibleFolder)
 			if err != nil {
 				t.Errorf("unable to create vault app: %#v", err)
 				return

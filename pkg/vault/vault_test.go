@@ -23,13 +23,6 @@ func TestNew(t *testing.T) {
 		wantErr    error
 	}{
 		{
-			"should reject empty vault pass",
-			"",
-			"",
-			nil,
-			ErrNoVaultPass,
-		},
-		{
 			"should reject empty root folder",
 			"~/.vault_pass.txt",
 			"",
@@ -61,7 +54,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestGetVaultPass(t *testing.T) {
+func TestGetVaultValueAtPath(t *testing.T) {
 	var cases = []struct {
 		intention  string
 		vaultPass  string
@@ -80,13 +73,7 @@ func TestGetVaultPass(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
-			app, err := New(testCase.vaultPass, testCase.rootFolder)
-			if err != nil {
-				t.Errorf("unable to create App: %#v", err)
-				return
-			}
-
-			result, err := app.getVaultPass()
+			result, err := getVaultValueAtPath(testCase.vaultPass)
 
 			failed := false
 
@@ -119,18 +106,8 @@ func TestGetVaultKey(t *testing.T) {
 		wantErr         error
 	}{
 		{
-			"should handle error while reading vault",
-			"notExistingFile.txt",
-			"ansible",
-			"",
-			"api_key",
-			ansible_vault.DecryptFile,
-			"",
-			errors.New("open notExistingFile.txt: no such file or directory"),
-		},
-		{
 			"should handle error while decrypting file",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"ansible",
 			"notExistingFile.txt",
 			"api_key",
@@ -140,7 +117,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle simple vault file with case insensitive comparison",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "simple_vault_test.yaml"),
 			"api_key",
@@ -150,7 +127,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle empty key",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "simple_vault_test.yaml"),
 			"",
@@ -160,7 +137,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle invalid yaml",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "invalid_yaml_test.yaml"),
 			"api_key",
@@ -170,7 +147,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle multi-line vault file",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"API_SECRET",
@@ -180,7 +157,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle multi-line vault value",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"MULTILINE_token",
@@ -190,7 +167,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"should handle error on not found key",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "complex_vault_test.yaml"),
 			"KEY_NOT_FOUND",
@@ -200,7 +177,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"double_quoted string",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "sanitized_vault.yml"),
 			"double_quoted",
@@ -210,7 +187,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"double_quoted string",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "sanitized_vault.yml"),
 			"single_quoted",
@@ -220,7 +197,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"unquoted string",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "sanitized_vault.yml"),
 			"unquoted",
@@ -230,7 +207,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"single_quote string",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "sanitized_vault.yml"),
 			"single_quote",
@@ -240,7 +217,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"integer string",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "sanitized_vault.yml"),
 			"integer",
@@ -250,7 +227,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"quote_inside string",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "sanitized_vault.yml"),
 			"quote_inside",
@@ -260,7 +237,7 @@ func TestGetVaultKey(t *testing.T) {
 		},
 		{
 			"double_quote_inside string",
-			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
 			"./",
 			path.Join(ansibleFolder, "sanitized_vault.yml"),
 			"double_quote_inside",
@@ -299,6 +276,67 @@ func TestGetVaultKey(t *testing.T) {
 	}
 }
 
+func TestGetVaultPassword(t *testing.T) {
+	var cases = []struct {
+		intention string
+		vaultPass string
+		vaultPath string
+		want      string
+		wantErr   error
+	}{
+		{
+			"should return vaultPass first",
+			"secretValue",
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secretValue",
+			nil,
+		},
+		{
+			"should return content of vaultPath",
+			"",
+			path.Join(ansibleFolder, "vault_pass_test.txt"),
+			"secret",
+			nil,
+		},
+		{
+			"should return content of vaultPath",
+			"",
+			"notExistingFile.txt",
+			"",
+			ErrNoVaultPass,
+		},
+		{
+			"should handle error when no vaultPass and vaultPath",
+			"",
+			"",
+			"",
+			ErrNoVaultPass,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.intention, func(t *testing.T) {
+			result, err := GetVaultPassword(testCase.vaultPath, testCase.vaultPass)
+
+			failed := false
+
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else if result != testCase.want {
+				failed = true
+			}
+
+			if failed {
+				t.Errorf("getVaultPass() = (`%s`, %v), want (`%s`, %v)", result, err, testCase.want, testCase.wantErr)
+			}
+		})
+	}
+}
+
 func TestInEnv(t *testing.T) {
 	var cases = []struct {
 		intention string
@@ -328,7 +366,7 @@ func TestInEnv(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New(path.Join(ansibleFolder, "vault_pass_test.txt"), ansibleFolder)
+			app, err := New("secret", ansibleFolder)
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
@@ -384,7 +422,7 @@ func TestInPath(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New(path.Join(ansibleFolder, "vault_pass_test.txt"), path.Join(ansibleFolder, "group_vars"))
+			app, err := New("secret", path.Join(ansibleFolder, "group_vars"))
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
@@ -447,7 +485,7 @@ func TestInString(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New(path.Join(ansibleFolder, "vault_pass_test.txt"), path.Join(ansibleFolder, "group_vars"))
+			app, err := New("secret", path.Join(ansibleFolder, "group_vars"))
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
