@@ -44,16 +44,25 @@ func Provider() *schema.Provider {
 			"ansiblevault_string": inStringResource(),
 		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
-			vaultPath := r.Get("vault_path").(string)
-			vaultPass := r.Get("vault_pass").(string)
-			rootFolder := r.Get("root_folder").(string)
-
-			pass, err := vault.GetVaultPassword(vaultPath, vaultPass)
-			if err != nil {
-				return nil, err
-			}
-
-			return vault.New(pass, rootFolder)
+			return configure(safeString("vault_path"), safeString("vault_pass"), safeString(("root_folder")))
 		},
 	}
+}
+
+func safeString(input interface{}) string {
+	switch input.(type) {
+	case string:
+		return input.(string)
+	default:
+		return ""
+	}
+}
+
+func configure(path, pass, rootFolder string) (interface{}, error) {
+	pass, err := vault.GetVaultPassword(path, pass)
+	if err != nil {
+		return nil, err
+	}
+
+	return vault.New(pass, rootFolder)
 }
