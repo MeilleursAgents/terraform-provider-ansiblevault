@@ -53,7 +53,7 @@ get_last_tag() {
 }
 
 clean() {
-  echo -e "${BLUE}Cleaning ${OUTPUT_DIR}${RESET}"
+  printf "%bCleaning %s%b\n" "${BLUE}" "${OUTPUT_DIR}" "${RESET}"
 
   rm -rf "${OUTPUT_DIR}"
   mkdir "${OUTPUT_DIR}"
@@ -61,7 +61,7 @@ clean() {
 
 build() {
   if [[ "${#}" -ne 2 ]]; then
-    echo "Usage: build [BINARY_NAME] [MAIN_SOURCE]"
+    printf "%bUsage: build [BINARY_NAME] [MAIN_SOURCE]%b\n" "${BLUE}" "${RESET}"
     return 1
   fi
 
@@ -83,7 +83,7 @@ build() {
       export GOOS="${GOOS}"
       export GOARCH="${GOARCH}"
       export CGO_ENABLED=0
-      echo -e "${BLUE}Building binary ${1}_${GOOS}_${GOARCH} to ${OUTPUT_DIR}${RESET}"
+      printf "%bBuilding binary %s to %s%b\n" "${BLUE}" "${1}_${GOOS}_${GOARCH}" "${OUTPUT_DIR}" "${RESET}"
       go build -ldflags="-s -w -X ${GITHUB_REPOSITORY_PATH}.Version=${GIT_TAG} -X ${GITHUB_REPOSITORY_PATH}.BuildDate=${BUILD_DATE}" -installsuffix nocgo -o "${OUTPUT_DIR}/${1}_${GOOS}_${GOARCH}_${GIT_TAG}" "${2}"
     )
   done
@@ -91,7 +91,7 @@ build() {
 
 get_release_body() {
   if [[ "${#}" -ne 1 ]]; then
-    echo "Usage: get_release_body [GIT_TAG]"
+    printf "%bUsage: get_release_body [GIT_TAG]%b\n" "${BLUE}" "${RESET}"
     return 1
   fi
 
@@ -107,14 +107,14 @@ release() {
   read_variable_if_required GIT_TAG "$(get_last_tag)"
   read_variable_if_required RELEASE_NAME "$(get_last_tag)"
 
-  echo -e "${BLUE}Creating release ${GIT_TAG} for ${GITHUB_REPOSITORY}...${RESET}"
+  printf "%bCreating release %s for %s...%b\n" "${BLUE}" "${GIT_TAG}" "${GITHUB_REPOSITORY}" "${RESET}"
 
   local HTTP_OUTPUT="http_output.txt"
   local HTTP_STATUS
 
   local BODY
   BODY=$(get_release_body "${GIT_TAG}" | sed 's|"|'"'"'|g')
-  echo -e "${GREEN}${BODY}${RESET}"
+  printf "%b%s%b\n" "${GREEN}" "${BODY}" "${RESET}"
 
   local CLIENT_ARGS=("curl" "-q" "-sS" "-o" "${HTTP_OUTPUT}" "-w" "%{http_code}" "-H" "Authorization: token ${GITHUB_OAUTH_TOKEN}")
 
@@ -129,9 +129,10 @@ release() {
     }")"
 
   if [[ "${HTTP_STATUS}" != "201" ]]; then
-     echo -e "${RED}Failed to create release${RESET}"
-     cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
-     exit 1
+    printf "%bFailed to create release%b\n" "${RED}" "${RESET}"
+    printf "%bHTTP/%s%b\n" "${RED}" "${HTTP_STATUS}" "${RESET}"
+    cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
+    exit 1
   fi
 
   local RESPONSE_URL
@@ -139,7 +140,7 @@ release() {
   rm "${HTTP_OUTPUT}"
 
   for asset in "${OUTPUT_DIR}"/*; do
-    echo -e "${BLUE}Uploading asset ${asset}...${RESET}"
+    printf "%bUploading asset %s...%b\n" "${BLUE}" "${asset}" "${RESET}"
 
     HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
       -H "Content-Type: application/x-executable" \
@@ -149,15 +150,16 @@ release() {
     )"
 
     if [[ "${HTTP_STATUS}" != "201" ]]; then
-       echo -e "${RED}Failed to upload asset ${asset}${RESET}"
-       cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
-       exit 1
+      printf "%bFailed to upload asset %s%b\n" "${RED}" "${asset}" "${RESET}"
+      printf "%bHTTP/%s%b\n" "${RED}" "${HTTP_STATUS}" "${RESET}"
+      cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
+      exit 1
     fi
 
     rm "${HTTP_OUTPUT}"
   done
 
-  echo -e "${GREEN}Done!${RESET}"
+  printf "%bDone!%b\n" "${GREEN}" "${RESET}"
 }
 
 usage() {
