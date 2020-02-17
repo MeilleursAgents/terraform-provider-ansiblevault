@@ -12,22 +12,14 @@ jobs:
 
       - name: Fetch branches
         run: |
-          git fetch --no-tags --prune --depth=50 origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
-          git fetch --no-tags --prune --depth=50 origin "+refs/heads/${HEAD}:refs/remotes/origin/${HEAD}"
+          git fetch --no-tags --prune origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
+          git fetch --no-tags --prune origin "+refs/heads/${HEAD}:refs/remotes/origin/${HEAD}"
         env:
           BASE: ${{ github.base_ref }}
           HEAD: ${{ github.head_ref }}
 
-      - name: Check no WIP or fixup commit
-        env:
-          BASE: origin/${{ github.base_ref }}
-          HEAD: origin/${{ github.head_ref }}
-        run: |
-          export UNCLEAN_COMMITS="$(git log --oneline --grep '(fixup|wip)' -E -i "${BASE}..${HEAD}")"
-
-          if [[ -n ${UNCLEAN_COMMITS} ]]; then
-            printf "%s\n\n" "${UNCLEAN_COMMITS}"
-            printf "%b%s\n%b" '\033[0;31m' 'You have WIP or fixup commit, please cleanup!' '\033[0m'
-
-            exit 1
-          fi
+      - name: JudCoCo
+        uses: MeilleursAgents/JudCoCo@master
+        with:
+          base: origin/${{ github.base_ref }}
+          head: origin/${{ github.head_ref }}
