@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+set -o nounset -o pipefail
+
+var_color() {
+  export RED='\033[0;31m'
+  export GREEN='\033[0;32m'
+  export BLUE='\033[0;34m'
+  export YELLOW='\033[33m'
+  export RESET='\033[0m'
+}
+
+git_conventionnal_commits() {
+  declare -gA CONVENTIONAL_COMMIT_SCOPES
+  CONVENTIONAL_COMMIT_SCOPES['chore']='Changes in the core of the repository'
+  CONVENTIONAL_COMMIT_SCOPES['docs']='Documentation only changes'
+  CONVENTIONAL_COMMIT_SCOPES['feat']=$(printf 'A new feature for user %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['fix']=$(printf 'A bug fix for user %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['refactor']=$(printf 'A change that is not a feature not a bug %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['style']='A change that do not affect the meaning of the code'
+  CONVENTIONAL_COMMIT_SCOPES['test']='A new test or correcting existing tests'
+}
+
+conventionnal_commit_guidelines() {
+  printf "%bGuidelines for prefixing commit message from conventionalcommits.org%b\n\n" "${YELLOW}" "${RESET}"
+
+  for prefix in "${!CONVENTIONAL_COMMIT_SCOPES[@]}"; do
+    printf "%b%s%b(component)%b:%b\n" "${GREEN}" "${prefix}" "${BLUE}" "${GREEN}" "${RESET}"
+    printf "\t%s\n" "${CONVENTIONAL_COMMIT_SCOPES[${prefix}]}"
+  done
+
+  printf "\n\n%bYou can add '!' before ':', for indicating breaking change%b\n" "${YELLOW}" "${RESET}"
+  printf "\n\t%bfeat%b(api)%b!%b:%b Adding mandatory parameter on signup\n\n" "${GREEN}" "${BLUE}" "${RED}" "${GREEN}" "${RESET}"
+}
+
+commit_message_guidelines() {
+  printf "%bYou have to use a short commit description (max %d characters)%b\n\n" "${YELLOW}" "${DESCRIPTION_MAX_LENGTH}" "${RESET}"
+}
+
+git_is_commit_wip() {
+  if [[ ${1} =~ ^fixup\! ]]; then
+    printf "true"
+    return
+  fi
+
+  local WIP_REGEX="\\bwip\\b"
+  if [[ ${OSTYPE} =~ ^darwin ]]; then
+    WIP_REGEX="[[:<:]]wip[[:>:]]"
+  fi
+
+  if [[ ${1} =~ ${WIP_REGEX} ]]; then
+    printf "true"
+  else
+    printf "false"
+  fi
+}
+
+git_is_conventional_commit() {
+  shopt -s nocasematch
+  if [[ ${1} =~ ^(revert:\ )?($(IFS='|'; echo "${!CONVENTIONAL_COMMIT_SCOPES[*]}"))(\(.+\))?\!?:\ [a-zA-Z0-9]+ ]]; then
+    printf "true"
+  else
+    printf "false"
+  fi
+}
+
+git_is_valid_description() {
+  if [[ ${1} =~ ^.{1,${DESCRIPTION_MAX_LENGTH}}$ ]]; then
+    printf "true"
+  else
+    printf "false"
+  fi
+}
+
+handle_failed_check() {
+  if [[ -z ${ENFORCE_CONVENTIONAL_COMMITS:-} ]]; then
+    exit 0
+  fi
+
+  printf '%b+-------------------------+\n| Commit has been aborted |\n+-------------------------+%b\n' "${RED}" "${RESET}"
+  exit 1
+}
+
+main() {
+  var_color
+  git_conventionnal_commits
+
+  local DESCRIPTION_MAX_LENGTH="70"
+
+  local FIRST_LINE
+  FIRST_LINE="$(head -1 "${1}")"
+
+  if [[ $(git_is_commit_wip "${FIRST_LINE}") == "true" ]]; then
+    exit 0
+  fi
+
+  if [[ $(git_is_conventional_commit "${FIRST_LINE}") != "true" ]]; then
+    conventionnal_commit_guidelines
+    handle_failed_check
+  fi
+
+  if [[ $(git_is_valid_description "${FIRST_LINE}") != "true" ]]; then
+    commit_message_guidelines
+    handle_failed_check
+  fi
+
+  exit 0
+}
+
+main "${@:-}"

@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+set -o nounset -o pipefail
+
+sed_inplace() {
+  if [[ ${OSTYPE} =~ ^darwin ]]; then
+    sed -i '' "${@}"
+  else
+    sed -i "${@}"
+  fi
+}
+
+var_color() {
+  export RED='\033[0;31m'
+  export GREEN='\033[0;32m'
+  export BLUE='\033[0;34m'
+  export YELLOW='\033[33m'
+  export RESET='\033[0m'
+}
+
+git_conventionnal_commits() {
+  declare -gA CONVENTIONAL_COMMIT_SCOPES
+  CONVENTIONAL_COMMIT_SCOPES['chore']='Changes in the core of the repository'
+  CONVENTIONAL_COMMIT_SCOPES['docs']='Documentation only changes'
+  CONVENTIONAL_COMMIT_SCOPES['feat']=$(printf 'A new feature for user %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['fix']=$(printf 'A bug fix for user %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['refactor']=$(printf 'A change that is not a feature not a bug %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['style']='A change that do not affect the meaning of the code'
+  CONVENTIONAL_COMMIT_SCOPES['test']='A new test or correcting existing tests'
+}
+
+git_is_commit_wip() {
+  if [[ ${1} =~ ^fixup\! ]]; then
+    printf "true"
+  fi
+
+  local WIP_REGEX="\\bwip\\b"
+  if [[ ${OSTYPE} =~ ^darwin ]]; then
+    WIP_REGEX="[[:<:]]wip[[:>:]]"
+  fi
+
+  if [[ ${1} =~ ${WIP_REGEX} ]]; then
+    printf "true"
+  fi
+}
+
+git_is_conventional_commit() {
+  shopt -s nocasematch
+  if [[ ${1} =~ ^(revert:\ )?($(IFS='|'; echo "${!CONVENTIONAL_COMMIT_SCOPES[*]}"))(\(.+\))?\!?:\ [a-zA-Z0-9]+ ]]; then
+    printf "true"
+  else
+    printf "false"
+  fi
+}
+
+main() {
+  var_color
+  git_conventionnal_commits
+
+  local BRANCH_NAME
+  BRANCH_NAME=$(git symbolic-ref --short HEAD)
+
+  local FIRST_LINE
+  FIRST_LINE="$(head -1 "${1}")"
+
+  if [[ $(git_is_commit_wip "${FIRST_LINE}") == "true" ]]; then
+    exit 0
+  fi
+
+  if [[ -n ${BRANCH_NAME} && ${BRANCH_NAME} =~ (feature|fixe)s?/([A-Z0-9]+[-_][0-9]+) ]]; then
+    local PREFIX="${BASH_REMATCH[2]}"
+
+    if [[ ! ${FIRST_LINE} =~ ${PREFIX} ]]; then
+      if [[ $(git_is_conventional_commit "${FIRST_LINE}") == "true" ]]; then
+        perl -pi'' -e "s|^(revert:\ )?($(printf "%s\|" "${!CONVENTIONAL_COMMIT_SCOPES[@]}"))(\(.+\))?(\!?):|\1\2\3\4: ${PREFIX}|" "${1}"
+      else
+        sed_inplace -e "1s|^|${PREFIX} |" "${1}"
+      fi
+    fi
+  fi
+
+  exit 0
+}
+
+main "${@:-}"
