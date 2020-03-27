@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o nounset -o pipefail -o errexit
+
 github_last_release() {
   if [[ "${#}" -ne 1 ]]; then
     printf "%bUsage: github_last_release owner/repo%b\n" "${RED}" "${RESET}"
@@ -9,18 +11,22 @@ github_last_release() {
   local RED="\033[31m"
   local RESET="\033[0m"
 
-  local OUTPUT_TXT="output.txt"
+  local HTTP_OUTPUT="http_output.txt"
+  local CLIENT_ARGS=("curl" "-q" "-sSL" "--max-time" "30" "-o" "${HTTP_OUTPUT}" "-w" "%{http_code}")
+  if [[ -n ${GITHUB_OAUTH_TOKEN:-} ]]; then
+    CLIENT_ARGS+=("-H" "Authorization: token ${GITHUB_OAUTH_TOKEN}")
+  fi
 
   local LATEST_RELEASE
-  LATEST_RELEASE="$(curl -q -sSL --max-time 30 -o ${OUTPUT_TXT} -w "%{http_code}" "https://api.github.com/repos/${1}/releases/latest")"
+  LATEST_RELEASE="$("${CLIENT_ARGS[@]}" "https://api.github.com/repos/${1}/releases/latest")"
   if [[ "${LATEST_RELEASE}" != "200" ]]; then
     printf "%bUnable to list latest release for %s%b\n" "${RED}" "${1}" "${RESET}"
-    cat "${OUTPUT_TXT}" && rm "${OUTPUT_TXT}"
+    cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
     return
   fi
 
-  python -c "import json; print(json.load(open('${OUTPUT_TXT}'))['tag_name'])"
-  rm "${OUTPUT_TXT}"
+  python -c "import json; print(json.load(open('${HTTP_OUTPUT}'))['tag_name'])"
+  rm "${HTTP_OUTPUT}"
 }
 
 main() {
