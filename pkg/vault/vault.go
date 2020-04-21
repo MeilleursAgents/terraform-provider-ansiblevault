@@ -83,10 +83,8 @@ func (a App) getVaultKey(filename string, key string, getVaultContent func(strin
 		return "", err
 	}
 
-	for vaultKey, vaultValue := range vaultContent {
-		if strings.EqualFold(key, vaultKey) {
-			return strings.Trim(vaultValue, "\n"), nil
-		}
+	if value, ok := vaultContent[key]; ok {
+		return strings.Trim(value, "\n"), nil
 	}
 
 	return "", ErrKeyNotFound
