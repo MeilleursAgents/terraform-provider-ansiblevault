@@ -143,7 +143,7 @@ func TestGetVaultKey(t *testing.T) {
 			"api_key",
 			ansible_vault.DecryptFile,
 			"",
-			errors.New("yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `I'm not...` into map[string]string"),
+			errors.New("yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `I'm not...` into map[string]interface {}"),
 		},
 		{
 			"should handle multi-line vault file",
@@ -243,6 +243,16 @@ func TestGetVaultKey(t *testing.T) {
 			"double_quote_inside",
 			ansible_vault.DecryptFile,
 			"abc\"def",
+			nil,
+		},
+		{
+			"boolean string",
+			"secret",
+			"./",
+			path.Join(ansibleFolder, "sanitized_vault.yml"),
+			"boolean",
+			ansible_vault.DecryptFile,
+			"true",
 			nil,
 		},
 	}
