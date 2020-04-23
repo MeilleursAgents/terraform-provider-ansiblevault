@@ -79,13 +79,16 @@ func (a App) getVaultKey(filename string, key string, getVaultContent func(strin
 		return strings.Trim(rawVault, "\n"), nil
 	}
 
-	var vaultContent = make(map[string]interface{})
+	var vaultContent = make(map[interface{}]interface{})
 	if err := yaml.Unmarshal([]byte(rawVault), &vaultContent); err != nil {
 		return "", err
 	}
 
-	if value, ok := vaultContent[key]; ok {
-		switch v := value.(type) {
+	keys := strings.Split(key, ".")
+	for _, k := range keys {
+		switch v := vaultContent[k].(type) {
+		case map[interface{}]interface{}:
+			vaultContent = v
 		case string:
 			return strings.Trim(v, "\n"), nil
 		case int:
