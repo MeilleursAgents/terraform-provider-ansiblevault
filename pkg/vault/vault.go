@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"strconv"
 	"strings"
 
 	ansible_vault "github.com/sosedoff/ansible-vault-go"
@@ -78,13 +79,20 @@ func (a App) getVaultKey(filename string, key string, getVaultContent func(strin
 		return strings.Trim(rawVault, "\n"), nil
 	}
 
-	var vaultContent map[string]string
+	var vaultContent = make(map[string]interface{})
 	if err := yaml.Unmarshal([]byte(rawVault), &vaultContent); err != nil {
 		return "", err
 	}
 
 	if value, ok := vaultContent[key]; ok {
-		return strings.Trim(value, "\n"), nil
+		switch v := value.(type) {
+		case string:
+			return strings.Trim(v, "\n"), nil
+		case int:
+			return strconv.Itoa(v), nil
+		case bool:
+			return strconv.FormatBool(v), nil
+		}
 	}
 
 	return "", ErrKeyNotFound
