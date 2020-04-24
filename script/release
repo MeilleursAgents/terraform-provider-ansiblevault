@@ -2,7 +2,15 @@
 
 set -o nounset -o pipefail -o errexit
 
-read_variable_if_required() {
+var_color() {
+  export RED='\033[0;31m'
+  export GREEN='\033[0;32m'
+  export BLUE='\033[0;34m'
+  export YELLOW='\033[33m'
+  export RESET='\033[0m'
+}
+
+var_read() {
   local SECRET_ARG=""
   if [[ ${3:-} == "secret" ]]; then
     SECRET_ARG="-s"
@@ -25,6 +33,10 @@ read_variable_if_required() {
   fi
 }
 
+git_is_inside() {
+  git rev-parse --is-inside-work-tree 2>&1
+}
+
 git_root() {
   if [[ "$(git rev-parse --is-inside-work-tree 2>&1)" != "true" ]]; then
     pwd
@@ -34,20 +46,136 @@ git_root() {
   git rev-parse --show-toplevel
 }
 
-get_github_repository() {
-  if [[ "$(git rev-parse --is-inside-work-tree 2>&1)" != "true" ]]; then
+git_conventionnal_commits() {
+  declare -gA CONVENTIONAL_COMMIT_SCOPES
+  CONVENTIONAL_COMMIT_SCOPES['chore']='Changes in the core of the repository'
+  CONVENTIONAL_COMMIT_SCOPES['docs']='Documentation only changes'
+  CONVENTIONAL_COMMIT_SCOPES['feat']=$(printf 'A new feature for user %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['fix']=$(printf 'A bug fix for user %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['refactor']=$(printf 'A change that is not a feature not a bug %b(production change)%b' "${RED}" "${RESET}")
+  CONVENTIONAL_COMMIT_SCOPES['style']='A change that do not affect the meaning of the code'
+  CONVENTIONAL_COMMIT_SCOPES['test']='A new test or correcting existing tests'
+}
+
+git_changelog() {
+  git_conventionnal_commits
+
+  if [[ "${#}" -ne 2 ]]; then
+    printf "%bUsage: git_changelog [END_REF] [START_REF]%b\n" "${RED}" "${RESET}"
+    return 1
+  fi
+
+  if [[ $(git_is_inside) != "true" ]]; then
+    printf "%bnot inside a git tree%b\n" "${YELLOW}" "${RESET}"
+    return 2
+  fi
+
+  local FEATURES=()
+  local FIXES=()
+  local MISC=()
+  local BREAKING=()
+
+  IFS=$'\n'
+
+  shopt -s nocasematch
+  for hash in $(git log --no-merges --pretty=format:'%h' "${1}...${2}"); do
+    local VERSION_MESSAGE=""
+    local HASH=""
+    local TYPE=""
+    local BREAK=""
+
+     for line in $(git show -s --format='%h %B' "${hash}" | grep -v '^\s*$'); do
+      if [[ -z ${VERSION_MESSAGE} ]] && [[ ${line} =~ ^([0-9a-f]{1,16})\ (revert )?($(IFS='|'; echo "${!CONVENTIONAL_COMMIT_SCOPES[*]}"))(\(.+\))?(\!)?:\ (.*)$ ]]; then
+
+        HASH="${BASH_REMATCH[1]}"
+        local REVERT="${BASH_REMATCH[2]}"
+        TYPE="${BASH_REMATCH[3]}"
+        local COMPONENT="${BASH_REMATCH[4]}"
+        local CONTENT="${BASH_REMATCH[6]}"
+        BREAK="${BASH_REMATCH[5]}"
+
+        VERSION_MESSAGE="*"
+
+        if [[ -n ${REVERT} ]]; then
+          VERSION_MESSAGE+=" **reverted**"
+        fi
+
+        if [[ -n ${COMPONENT} ]]; then
+          VERSION_MESSAGE+=" *${COMPONENT}*"
+        fi
+
+        VERSION_MESSAGE+=" ${CONTENT}"
+      fi
+
+      if [[ -z ${VERSION_MESSAGE} ]]; then
+        break
+      fi
+
+      if [[ ${line} =~ ^BREAKING[-\ ]CHANGE:\ (.*)$ ]]; then
+        BREAKING+=("* ${BASH_REMATCH[1]}")
+        BREAK=""
+
+        continue
+      fi
+
+      if [[ ${line} =~ ^((closes?)|(fix(ed)?))\ (#[0-9]+)$ ]]; then
+        VERSION_MESSAGE+=" ${BASH_REMATCH[5]}"
+        HASH=""
+
+        continue
+      fi
+    done
+
+    if [[ -n ${VERSION_MESSAGE} ]]; then
+      if [[ -n ${HASH} ]]; then
+        VERSION_MESSAGE+=" ${HASH}"
+      fi
+
+      if [[ ${TYPE} == "feat" ]]; then
+        FEATURES+=("${VERSION_MESSAGE}")
+      elif [[ ${TYPE} == "fix" ]]; then
+        FIXES+=("${VERSION_MESSAGE}")
+      else
+        MISC+=("${VERSION_MESSAGE}")
+      fi
+
+      if [[ ${BREAK} == "!" ]]; then
+        BREAKING+=("${VERSION_MESSAGE}")
+      fi
+    fi
+  done
+
+  if [[ ${#FEATURES[@]} -gt 0 ]]; then
+    printf "# Features\n\n%s\n\n" "$(printf "%s\n" "${FEATURES[@]}")"
+  fi
+
+  if [[ ${#FIXES[@]} -gt 0 ]]; then
+    printf "# Fixes\n\n%s\n\n" "$(printf "%s\n" "${FIXES[@]}")"
+  fi
+
+  if [[ ${#MISC[@]} -gt 0 ]]; then
+    printf "# Miscellaneous\n\n%s\n\n" "$(printf "%s\n" "${MISC[@]}")"
+  fi
+
+  if [[ ${#BREAKING[@]} -gt 0 ]]; then
+    printf "# BREAKING CHANGES\n\n%s\n\n" "$(printf "%s\n" "${BREAKING[@]}")"
+  fi
+}
+
+git_remote_repository() {
+  if [[ $(git_is_inside) != "true" ]]; then
     return
   fi
 
   local REMOTE_URL
   REMOTE_URL="$(git remote get-url --push "$(git remote show | head -1)")"
 
-  if [[ "${REMOTE_URL}" =~ ^.*@.*:(.*)\/(.*).git$ ]]; then
-    echo "${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+  if [[ ${REMOTE_URL} =~ ^.*@.*:(.*)\/(.*).git$ ]]; then
+    printf "%s/%s" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
   fi
 }
 
-get_last_tag() {
+git_last_tag() {
   if [[ "$(git rev-parse --is-inside-work-tree 2>&1)" != "true" ]]; then
     return
   fi
@@ -68,8 +196,8 @@ build() {
     return 1
   fi
 
-  read_variable_if_required GIT_TAG "$(get_last_tag)"
-  read_variable_if_required GITHUB_REPOSITORY "$(get_github_repository)"
+  var_read GIT_TAG "$(git_last_tag)"
+  var_read GITHUB_REPOSITORY "$(git_remote_repository)"
 
   local BUILD_DATE
   BUILD_DATE=$(date "+%Y-%m-%d_%H:%M:%S")
@@ -104,22 +232,111 @@ get_release_body() {
   git log --no-merges --pretty=format:'%h %s' "${1}...${PREVIOUS_TAG}" | awk '!a[substr($0,8)]++' | awk '{printf "* %s\\n",$0}'
 }
 
+version_semver() {
+  if [[ $(git_is_inside) != "true" ]]; then
+    printf "%bnot inside a git tree%b\n" "${YELLOW}" "${RESET}"
+    return 1
+  fi
+
+  local PREFIX="v"
+  local MAJOR="0"
+  local MINOR="0"
+  local PATCH="0"
+
+  local CURRENT_VERSION
+  CURRENT_VERSION="$(git describe --tag 2> /dev/null | awk -F "-" '{print $1}')"
+
+  if [[ -n ${CURRENT_VERSION} ]]; then
+    if ! [[ ${CURRENT_VERSION} =~ ([a-zA-Z]*)([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+      printf "%bcannot parse existing version: %s%b\n" "${RED}" "${CURRENT_VERSION}" "${RESET}"
+      return 2
+    fi
+
+    local PREFIX="${BASH_REMATCH[1]}"
+    local MAJOR="${BASH_REMATCH[2]}"
+    local MINOR="${BASH_REMATCH[3]}"
+    local PATCH="${BASH_REMATCH[4]}"
+  fi
+
+  if [[ ${#} -lt 1 ]]; then
+    printf "%bCurrent version is: %s%b\n" "${BLUE}" "${PREFIX}${MAJOR}.${MINOR}.${PATCH}" "${RESET}"
+    printf "%bUsage: version_semver [major|minor|patch] [git ref] [quiet]%b\n" "${RED}" "${RESET}"
+    return 3
+  fi
+
+  case "${1}" in
+    "major")
+      MAJOR="$(( MAJOR+1 ))"
+      MINOR="0"
+      PATCH="0"
+      ;;
+
+    "minor")
+      MINOR="$(( MINOR+1 ))"
+      PATCH="0"
+      ;;
+
+    "patch")
+      PATCH="$(( PATCH+1 ))"
+      ;;
+
+    *)
+      printf "%bunknown version name: %s%b\n" "${RED}" "${1}" "${RESET}"
+      return 4
+  esac
+
+  local NEW_VERSION="${PREFIX}${MAJOR}.${MINOR}.${PATCH}"
+
+  if [[ ${#} -lt 3 ]]; then
+    git tag -a "${NEW_VERSION}" -m "${NEW_VERSION}" "${2:-HEAD}"
+    printf "%bNew version is: %s%b\n" "${GREEN}" "${NEW_VERSION}" "${RESET}"
+  else
+    printf "%s" "${NEW_VERSION}"
+  fi
+}
+
 release() {
-  read_variable_if_required GITHUB_OAUTH_TOKEN "" "secret"
-  read_variable_if_required GITHUB_REPOSITORY "$(get_github_repository)"
-  read_variable_if_required GIT_TAG "$(get_last_tag)"
-  read_variable_if_required RELEASE_NAME "$(get_last_tag)"
+  if [[ $(git_is_inside) != "true" ]]; then
+    printf "%bnot inside a git tree%b\n" "${YELLOW}" "${RESET}"
+    return 1
+  fi
+
+  printf "%bIdentifying semver%b\n" "${BLUE}" "${RESET}"
+  var_read VERSION_REF "HEAD"
+  var_read PREVIOUS_REF "$(git tag --sort=-creatordate | grep -v "${VERSION_REF}" | head -1)"
+
+  local CHANGELOG
+  CHANGELOG=$(git_changelog "${VERSION_REF}" "${PREVIOUS_REF}")
+  printf "%bCHANGELOG:%b\n\n%s%b\n\n" "${YELLOW}" "${GREEN}" "${CHANGELOG}" "${RESET}"
+
+  local VERSION_TYPE="patch"
+  if [[ ${CHANGELOG} =~ \#\ BREAKING\ CHANGES ]]; then
+    VERSION_TYPE="major"
+  elif [[ ${CHANGELOG} =~ \#\ Features ]]; then
+    VERSION_TYPE="minor"
+  fi
+
+  printf "%bRelease seems to be a %b%s%b\n" "${BLUE}" "${YELLOW}" "${VERSION_TYPE}" "${RESET}"
+  printf "%bSpecify explicit git tag or major|minor|patch for semver increment%b\n" "${BLUE}" "${RESET}"
+  var_read VERSION "${VERSION_TYPE}" ""
+
+  local GIT_TAG
+  if [[ ${VERSION} =~ (major|minor|patch) ]]; then
+    GIT_TAG="$(version_semver "${VERSION}" "${VERSION_REF}" "quiet")"
+  else
+    GIT_TAG="${VERSION}"
+  fi
+
+  var_read GITHUB_OAUTH_TOKEN "" "secret"
+  var_read GITHUB_REPOSITORY "$(git_remote_repository)"
+  var_read RELEASE_NAME "${GIT_TAG}"
 
   printf "%bCreating release %s for %s...%b\n" "${BLUE}" "${GIT_TAG}" "${GITHUB_REPOSITORY}" "${RESET}"
 
   local HTTP_OUTPUT="http_output.txt"
   local HTTP_STATUS
 
-  local BODY
-  BODY=$(get_release_body "${GIT_TAG}" | sed 's|"|'"'"'|g')
-  printf "%b%s%b\n" "${GREEN}" "${BODY}" "${RESET}"
-
-  local CLIENT_ARGS=("curl" "-q" "-sS" "-o" "${HTTP_OUTPUT}" "-w" "%{http_code}" "-H" "Authorization: token ${GITHUB_OAUTH_TOKEN}")
+  local CLIENT_ARGS=("curl" "-q" "-sSL" "--max-time" "300" "-o" "${HTTP_OUTPUT}" "-w" "%{http_code}" "-H" "Authorization: token ${GITHUB_OAUTH_TOKEN}")
 
   HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
     -H "Content-Type: application/json" \
@@ -127,42 +344,45 @@ release() {
     "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
     -d "{
       \"tag_name\": \"${GIT_TAG}\",
+      \"target_commitish\": \"$(git rev-parse "${VERSION_REF}")\",
       \"name\": \"${RELEASE_NAME}\",
-      \"body\": \"${BODY}\"
+      \"body\": \"$(echo "${CHANGELOG}" | sed 's|"|'"'"'|g' | awk '{printf "%s\\n", $0}')\"
     }")"
 
-  if [[ "${HTTP_STATUS}" != "201" ]]; then
+  if [[ ${HTTP_STATUS} != "201" ]]; then
     printf "%bFailed to create release%b\n" "${RED}" "${RESET}"
     printf "%bHTTP/%s%b\n" "${RED}" "${HTTP_STATUS}" "${RESET}"
     cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
     exit 1
   fi
 
-  local RESPONSE_URL
-  RESPONSE_URL=$(python -c "import json; data = json.load(open('${HTTP_OUTPUT}')); print(data['upload_url']);" | sed 's|{.*||')
-  rm "${HTTP_OUTPUT}"
-
-  for asset in "${OUTPUT_DIR}"/*; do
-    printf "%bUploading asset %s...%b\n" "${BLUE}" "${asset}" "${RESET}"
-
-    HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
-      -H "Content-Type: application/x-executable" \
-      -X POST \
-      "${RESPONSE_URL}?name=$(basename "${asset}")" \
-      --data-binary "@${asset}"
-    )"
-
-    if [[ "${HTTP_STATUS}" != "201" ]]; then
-      printf "%bFailed to upload asset %s%b\n" "${RED}" "${asset}" "${RESET}"
-      printf "%bHTTP/%s%b\n" "${RED}" "${HTTP_STATUS}" "${RESET}"
-      cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
-      exit 1
-    fi
-
+  if [[ -d ${OUTPUT_DIR} ]]; then
+    local RESPONSE_URL
+    RESPONSE_URL=$(python -c "import json; data = json.load(open('${HTTP_OUTPUT}')); print(data['upload_url']);" | sed 's|{.*||')
     rm "${HTTP_OUTPUT}"
-  done
 
-  printf "%bDone!%b\n" "${GREEN}" "${RESET}"
+    for asset in "${OUTPUT_DIR}"/*; do
+      printf "%bUploading asset %s%b\n" "${BLUE}" "${asset}" "${RESET}"
+
+      HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
+        -H "Content-Type: application/x-executable" \
+        -X POST \
+        "${RESPONSE_URL}?name=$(basename "${asset}")" \
+        --data-binary "@${asset}"
+      )"
+
+      if [[ ${HTTP_STATUS} != "201" ]]; then
+        printf "%bFailed to upload asset %s%b\n" "${RED}" "${asset}" "${RESET}"
+        printf "%bHTTP/%s%b\n" "${RED}" "${HTTP_STATUS}" "${RESET}"
+        cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
+        exit 1
+      fi
+
+      rm "${HTTP_OUTPUT}"
+    done
+  fi
+
+  printf "%b✔ Done!%b\n" "${GREEN}" "${RESET}"
 }
 
 usage() {
@@ -173,10 +393,7 @@ usage() {
 }
 
 main() {
-  local BLUE='\033[0;34m'
-  local GREEN='\033[0;32m'
-  local RED='\033[0;31m'
-  local RESET='\033[0m'
+  var_color
 
   local ROOT_DIR
   ROOT_DIR="$(git_root)"
