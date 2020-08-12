@@ -3,7 +3,7 @@
 set -o nounset -o pipefail -o errexit
 
 github_last_release() {
-  if [[ "${#}" -ne 1 ]]; then
+  if [[ ${#} -ne 1 ]]; then
     printf "%bUsage: github_last_release owner/repo%b\n" "${RED}" "${RESET}"
     return 1
   fi
@@ -19,7 +19,7 @@ github_last_release() {
 
   local LATEST_RELEASE
   LATEST_RELEASE="$("${CLIENT_ARGS[@]}" "https://api.github.com/repos/${1}/releases/latest")"
-  if [[ "${LATEST_RELEASE}" != "200" ]]; then
+  if [[ ${LATEST_RELEASE} != "200" ]]; then
     printf "%bUnable to list latest release for %s%b\n" "${RED}" "${1}" "${RESET}"
     cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
     return
@@ -39,19 +39,24 @@ main() {
   OS=$(uname -s | tr '[:upper:]' '[:lower:]')
   ARCH=$(uname -m | tr '[:upper:]' '[:lower:]')
 
-  if [[ "${ARCH}" = "x86_64" ]]; then
+  if [[ ${ARCH} == "x86_64" ]]; then
     ARCH="amd64"
   fi
 
   local PLUGIN_DIR="${HOME}/.terraform.d/plugins/${OS}_${ARCH}/"
+  local TARGET_NAME="terraform-provider-ansiblevault_${PLUGIN_VERSION}"
+  local ARCHIVE_PATH="terraform-provider-ansiblevault_${PLUGIN_VERSION#v}_${OS}_${ARCH}.zip"
 
   printf "%bInstalling terraform-provider-ansiblevault version %s into %s%b\n" "${BLUE}" "${PLUGIN_VERSION}" "${PLUGIN_DIR}" "${RESET}"
 
   mkdir -p "${PLUGIN_DIR}"
   (
     cd "${PLUGIN_DIR}" || return
-    curl -q -sSL -o "terraform-provider-ansiblevault_${PLUGIN_VERSION}" "https://github.com/MeilleursAgents/terraform-provider-ansiblevault/releases/download/${PLUGIN_VERSION}/terraform-provider-ansiblevault_${OS}_${ARCH}_${PLUGIN_VERSION}"
-    chmod +x "terraform-provider-ansiblevault_${PLUGIN_VERSION}"
+    curl -q -sSL -O "https://github.com/MeilleursAgents/terraform-provider-ansiblevault/releases/download/${PLUGIN_VERSION}/${ARCHIVE_PATH}"
+    unzip "${ARCHIVE_PATH}" -d "${TARGET_NAME}_content"
+    mv "${TARGET_NAME}_content/${TARGET_NAME}" "${TARGET_NAME}"
+    rm -rf "${ARCHIVE_PATH}" "${TARGET_NAME}_content"
+    chmod +x "${TARGET_NAME}"
   )
 }
 
