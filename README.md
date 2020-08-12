@@ -75,7 +75,7 @@ make config
 
 ## Build and Deploy
 
-You need a [Github OAuth Token](https://github.com/settings/tokens/new) for doing a GitHub release.
+You need a [Github OAuth Token](https://github.com/settings/tokens/new) for doing a GitHub release and [goreleaser](https://goreleaser.com/)
 
 ```bash
 make github

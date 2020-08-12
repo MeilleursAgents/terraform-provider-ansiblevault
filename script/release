@@ -162,62 +162,17 @@ git_changelog() {
   fi
 }
 
-git_remote_repository() {
-  if [[ $(git_is_inside) != "true" ]]; then
-    return
-  fi
-
-  local REMOTE_URL
-  REMOTE_URL="$(git remote get-url --push "$(git remote show | head -1)")"
-
-  if [[ ${REMOTE_URL} =~ ^.*@.*:(.*)\/(.*).git$ ]]; then
-    printf "%s/%s" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
-  fi
-}
-
-git_last_tag() {
-  if [[ "$(git rev-parse --is-inside-work-tree 2>&1)" != "true" ]]; then
-    return
-  fi
-
-  git describe --tag 2> /dev/null | awk -F "-" '{print $1}'
-}
-
 clean() {
-  printf "%bCleaning %s%b\n" "${BLUE}" "${OUTPUT_DIR}" "${RESET}"
+  printf "%bCleaning %s%b\n" "${BLUE}" "${OUTPUT_DIRS}" "${RESET}"
 
-  rm -rf "${OUTPUT_DIR}"
-  mkdir "${OUTPUT_DIR}"
+  for OUTPUT_DIR in "${OUTPUT_DIRS[@]}"; do
+    rm -rf "${OUTPUT_DIR}"
+    mkdir "${OUTPUT_DIR}"
+  done
 }
 
 build() {
-  if [[ "${#}" -ne 2 ]]; then
-    printf "%bUsage: build [BINARY_NAME] [MAIN_SOURCE]%b\n" "${BLUE}" "${RESET}"
-    return 1
-  fi
-
-  var_read GIT_TAG "$(git_last_tag)"
-  var_read GITHUB_REPOSITORY "$(git_remote_repository)"
-
-  local BUILD_DATE
-  BUILD_DATE=$(date "+%Y-%m-%d_%H:%M:%S")
-  local GITHUB_REPOSITORY_PATH="github.com/${GITHUB_REPOSITORY}"
-  local TARGETS=('linux/amd64' 'linux/386' 'darwin/amd64')
-
-  for OS_ARCH in "${TARGETS[@]}"; do
-    IFS='/' read -ra context <<< "${OS_ARCH}"
-
-    local GOOS="${context[0]}"
-    local GOARCH="${context[1]}"
-
-    (
-      export GOOS="${GOOS}"
-      export GOARCH="${GOARCH}"
-      export CGO_ENABLED=0
-      printf "%bBuilding binary %s to %s%b\n" "${BLUE}" "${1}_${GOOS}_${GOARCH}" "${OUTPUT_DIR}" "${RESET}"
-      go build -ldflags="-s -w -X ${GITHUB_REPOSITORY_PATH}.Version=${GIT_TAG} -X ${GITHUB_REPOSITORY_PATH}.BuildDate=${BUILD_DATE}" -installsuffix nocgo -o "${OUTPUT_DIR}/${1}_${GOOS}_${GOARCH}_${GIT_TAG}" "${2}"
-    )
-  done
+  goreleaser --rm-dist --release-notes=release/CHANGELOG.md
 }
 
 get_release_body() {
@@ -287,12 +242,7 @@ version_semver() {
 
   local NEW_VERSION="${PREFIX}${MAJOR}.${MINOR}.${PATCH}"
 
-  if [[ ${#} -lt 3 ]]; then
-    git tag -a "${NEW_VERSION}" -m "${NEW_VERSION}" "${2:-HEAD}"
-    printf "%bNew version is: %s%b\n" "${GREEN}" "${NEW_VERSION}" "${RESET}"
-  else
-    printf "%s" "${NEW_VERSION}"
-  fi
+  printf "%s" "${NEW_VERSION}"
 }
 
 release() {
@@ -316,80 +266,29 @@ release() {
     VERSION_TYPE="minor"
   fi
 
+  printf "${CHANGELOG}" > release/CHANGELOG.md
+
   printf "%bRelease seems to be a %b%s%b\n" "${BLUE}" "${YELLOW}" "${VERSION_TYPE}" "${RESET}"
   printf "%bSpecify explicit git tag or major|minor|patch for semver increment%b\n" "${BLUE}" "${RESET}"
   var_read VERSION "${VERSION_TYPE}" ""
 
   local GIT_TAG
   if [[ ${VERSION} =~ (major|minor|patch) ]]; then
-    GIT_TAG="$(version_semver "${VERSION}" "${VERSION_REF}" "quiet")"
+    GIT_TAG=$(version_semver "${VERSION}" "${VERSION_REF}" "quiet")
   else
     GIT_TAG="${VERSION}"
   fi
 
-  var_read GITHUB_OAUTH_TOKEN "" "secret"
-  var_read GITHUB_REPOSITORY "$(git_remote_repository)"
-  var_read RELEASE_NAME "${GIT_TAG}"
-
-  printf "%bCreating release %s for %s...%b\n" "${BLUE}" "${GIT_TAG}" "${GITHUB_REPOSITORY}" "${RESET}"
-
-  local HTTP_OUTPUT="http_output.txt"
-  local HTTP_STATUS
-
-  local CLIENT_ARGS=("curl" "-q" "-sSL" "--max-time" "300" "-o" "${HTTP_OUTPUT}" "-w" "%{http_code}" "-H" "Authorization: token ${GITHUB_OAUTH_TOKEN}")
-
-  HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
-    -H "Content-Type: application/json" \
-    -X POST \
-    "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
-    -d "{
-      \"tag_name\": \"${GIT_TAG}\",
-      \"target_commitish\": \"$(git rev-parse "${VERSION_REF}")\",
-      \"name\": \"${RELEASE_NAME}\",
-      \"body\": \"$(echo "${CHANGELOG}" | sed 's|"|'"'"'|g' | awk '{printf "%s\\n", $0}')\"
-    }")"
-
-  if [[ ${HTTP_STATUS} != "201" ]]; then
-    printf "%bFailed to create release%b\n" "${RED}" "${RESET}"
-    printf "%bHTTP/%s%b\n" "${RED}" "${HTTP_STATUS}" "${RESET}"
-    cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
-    exit 1
-  fi
-
-  if [[ -d ${OUTPUT_DIR} ]]; then
-    local RESPONSE_URL
-    RESPONSE_URL=$(python -c "import json; data = json.load(open('${HTTP_OUTPUT}')); print(data['upload_url']);" | sed 's|{.*||')
-    rm "${HTTP_OUTPUT}"
-
-    for asset in "${OUTPUT_DIR}"/*; do
-      printf "%bUploading asset %s%b\n" "${BLUE}" "${asset}" "${RESET}"
-
-      HTTP_STATUS="$("${CLIENT_ARGS[@]}" \
-        -H "Content-Type: application/x-executable" \
-        -X POST \
-        "${RESPONSE_URL}?name=$(basename "${asset}")" \
-        --data-binary "@${asset}"
-      )"
-
-      if [[ ${HTTP_STATUS} != "201" ]]; then
-        printf "%bFailed to upload asset %s%b\n" "${RED}" "${asset}" "${RESET}"
-        printf "%bHTTP/%s%b\n" "${RED}" "${HTTP_STATUS}" "${RESET}"
-        cat "${HTTP_OUTPUT}" && rm "${HTTP_OUTPUT}"
-        exit 1
-      fi
-
-      rm "${HTTP_OUTPUT}"
-    done
-  fi
+  git tag -a "${GIT_TAG}" -m "${GIT_TAG}" "${VERSION_REF}"
 
   printf "%b✔ Done!%b\n" "${GREEN}" "${RESET}"
 }
 
 usage() {
   printf "Usage of %s\n" "${0}"
-  printf "clean\n\tClean output dir %s\n" "${OUTPUT_DIR}"
+  printf "clean\n\tClean output directories %s\n" "${OUTPUT_DIRS}"
   printf "build\n\tBuild binary for %s\n" "${OUTPUT_BINARIES[*]}"
-  printf "release\n\tCreate GitHub release and upload output dir content\n"
+  printf "release\n\tGenerate CHANGELOG for Github release and create tag\n"
 }
 
 main() {
@@ -398,18 +297,12 @@ main() {
   local ROOT_DIR
   ROOT_DIR="$(git_root)"
 
-  local OUTPUT_DIR="${ROOT_DIR}/release"
-
-  local OUTPUT_BINARIES
-  mapfile -t OUTPUT_BINARIES < <(go list -f '{{ .Dir }} {{ .Name }}' "${ROOT_DIR}/..." | grep "main" | awk '{print $1}')
+  local OUTPUT_DIRS=("${ROOT_DIR}/dist" "${ROOT_DIR}/release")
 
   for arg in "${@}"; do
     case "${arg}" in
       "build")
-        clean
-        for main in "${OUTPUT_BINARIES[@]}"; do
-          build "$(basename "${main}")" "${main}"
-        done
+        build
         ;;
       "release")
         release
@@ -424,5 +317,5 @@ main() {
   done
 }
 
-DEFAULT_ARGS=("build" "release" "clean")
+DEFAULT_ARGS=("clean" "release" "build" "clean")
 main "${@:-${DEFAULT_ARGS[@]}}"
