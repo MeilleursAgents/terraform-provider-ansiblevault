@@ -13,7 +13,12 @@ Made with ❤️ by [MeilleursAgents](https://www.meilleursagents.com)
 Thanks to [ansible-vault-go](https://github.com/sosedoff/ansible-vault-go) repository for having done the hardest part.
 
 ## Installation
+### Terraform 0.13
+This provider is available in [terraform registry](https://registry.terraform.io/providers/MeilleursAgents/ansiblevault/latest).
 
+For local development follow https://www.terraform.io/docs/commands/cli-config.html#implied-local-mirror-directories
+
+### Terrform 0.12
 ```bash
 curl https://raw.githubusercontent.com/MeilleursAgents/terraform-provider-ansiblevault/master/install.sh | bash
 ```
