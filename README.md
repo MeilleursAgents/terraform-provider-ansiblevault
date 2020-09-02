@@ -40,28 +40,13 @@ ${data.ansiblevault_path.api_key.value} will contain value of `USER_PASSWORD` st
 
 More examples in : [examples/terraform/](https://github.com/MeilleursAgents/terraform-provider-ansiblevault/tree/master/examples/terraform)
 
-## Documentation
+## Using the provider
+### Master
+- https://github.com/MeilleursAgents/terraform-provider-ansiblevault/tree/master/docs
 
-### Provider
+### Latest version
+- https://registry.terraform.io/providers/hashicorp/http/latest/docs
 
-| Key | Required | EnvVar | Description |
-|:--:|:--:|:--:|:--:|
-| vault_path |  | `ANSIBLE_VAULT_PASSWORD_FILE` | Path to ansible vault password file |
-| vault_pass |  | `ANSIBLE_VAULT_PASS` | Ansible vault pass value |
-| root_folder | ✅ | `ANSIBLE_ROOT_FOLDER` | Ansible root directory |
-
-For an easy way to configure provider with environment variables, consider the following snippet:
-
-```bash
-VAULT_PASS="$(ansible-config dump | grep DEFAULT_VAULT_PASSWORD_FILE | awk '{print $3}')"
-
-cat >> "${HOME}/.localrc" << EOM
-export ANSIBLE_VAULT_PASSWORD_FILE="${VAULT_PASS}"
-export ANSIBLE_ROOT_FOLDER="/path/to/my/ansible/"
-EOM
-```
-
-:information_source: `vault_pass` will override `vault_path`
 
 ## Contribution
 
