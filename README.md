@@ -31,7 +31,7 @@ ansiblevault_path example:
 
 ```tf
 provider "ansiblevault" {
-  vault_path  = "/home/username/.vault_pass.txt"
+  vault_pass  = "/home/username/.vault_pass.txt"
   root_folder = "/home/username/infra/ansible/"
 }
 
