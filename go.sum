@@ -72,6 +72,8 @@ github.com/apparentlymart/go-textseg/v12 v12.0.0 h1:bNEQyAGak9tojivJNkoqWErVCQbj
 github.com/apparentlymart/go-textseg/v12 v12.0.0/go.mod h1:S/4uRK2UtaQttw1GenVJEynmyUenKwP++x/+DdGV/Ec=
 github.com/apparentlymart/go-userdirs v0.0.0-20190512014041-4a23807e62b9 h1:GRMI604e1ILyP9b5DTNAZFHx+Vu693kxb9ZBrIA2JQg=
 github.com/apparentlymart/go-userdirs v0.0.0-20190512014041-4a23807e62b9/go.mod h1:7kfpUbyCdGJ9fDRCp3fopPQi5+cKNHgTE4ZuNrO71Cw=
+github.com/apparentlymart/go-userdirs v0.0.0-20200915174352-b0c018a67c13 h1:JtuelWqyixKApmXm3qghhZ7O96P6NKpyrlSIe8Rwnhw=
+github.com/apparentlymart/go-userdirs v0.0.0-20200915174352-b0c018a67c13/go.mod h1:7kfpUbyCdGJ9fDRCp3fopPQi5+cKNHgTE4ZuNrO71Cw=
 github.com/apparentlymart/go-versions v1.0.0 h1:4A4CekGuwDUQqc+uTXCrdb9Y98JZsML2sdfNTeVjsK4=
 github.com/apparentlymart/go-versions v1.0.0/go.mod h1:YF5j7IQtrOAOnsGkniupEA5bfCjzd7i14yu0shZavyM=
 github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2 h1:7Ip0wMmLHLRJdrloDxZfhMm0xrLXZS8+COSu2bXmEQs=
@@ -267,6 +269,8 @@ github.com/hashicorp/terraform v0.13.1 h1:cAUZo5xKeK+kOBAFYF8C8X/UpRompL7v2O4Gfo
 github.com/hashicorp/terraform v0.13.1/go.mod h1:pdOcUHnxbvLCPlQVH/Hk63DlG6wkZW4p1P4Za9LBleE=
 github.com/hashicorp/terraform v0.13.2 h1:PkEkverlXElXhRh+Bbi1rbB12mi9NBy9pEZbfEUPbcI=
 github.com/hashicorp/terraform v0.13.2/go.mod h1:pdOcUHnxbvLCPlQVH/Hk63DlG6wkZW4p1P4Za9LBleE=
+github.com/hashicorp/terraform v0.13.3 h1:mczNmN8HjsXm5tEhDc7a78+iQbE+bQvAsJPte33YZ+U=
+github.com/hashicorp/terraform v0.13.3/go.mod h1:1H1qcnppNc/bBGc7poOfnmmBeQMlF0stEN3haY3emCU=
 github.com/hashicorp/terraform-config-inspect v0.0.0-20191212124732-c6ae6269b9d7 h1:Pc5TCv9mbxFN6UVX0LH6CpQrdTM5YjbVI2w15237Pjk=
 github.com/hashicorp/terraform-config-inspect v0.0.0-20191212124732-c6ae6269b9d7/go.mod h1:p+ivJws3dpqbp1iP84+npOyAmTTOLMgCzrXd3GSdn/A=
 github.com/hashicorp/terraform-svchost v0.0.0-20191011084731-65d371908596 h1:hjyO2JsNZUKT1ym+FAdlBEkGPevazYsmVgIMw7dVELg=
