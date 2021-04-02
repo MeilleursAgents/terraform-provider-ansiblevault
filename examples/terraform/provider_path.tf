@@ -1,5 +1,4 @@
-provider ansiblevault {
-  version     = "~> 2.0"
+provider "ansiblevault" {
   alias       = "password_file"
   vault_path  = "../ansible/vault_pass_test.txt"
   root_folder = "../ansible"
