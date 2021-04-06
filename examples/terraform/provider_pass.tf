@@ -4,8 +4,7 @@ variable "vault_pass" {
 }
 
 #  See https://github.com/MeilleursAgents/terraform-provider-ansiblevault/blob/master/README.md for installation and usage
-provider ansiblevault {
-  version     = "~> 2.0"
+provider "ansiblevault" {
   vault_pass  = var.vault_pass
   root_folder = "../ansible"
 }
