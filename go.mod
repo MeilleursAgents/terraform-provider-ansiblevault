@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/hashicorp/terraform v1.0.3
-	github.com/sosedoff/ansible-vault-go v0.1
+	github.com/sosedoff/ansible-vault-go v0.0.0-20181205202858-ab5632c40bf5
 	gopkg.in/yaml.v2 v2.4.0
 )
 
