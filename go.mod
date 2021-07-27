@@ -1,6 +1,6 @@
 module github.com/MeilleursAgents/terraform-provider-ansiblevault/v2
 
-go 1.12
+go 1.16
 
 require (
 	github.com/hashicorp/terraform v0.14.10
