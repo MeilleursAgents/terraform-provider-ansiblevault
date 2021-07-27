@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/v2/pkg/vault"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func inStringResource() *schema.Resource {
