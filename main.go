@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/v2/pkg/provider"
-	"github.com/hashicorp/terraform/plugin"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func main() {
