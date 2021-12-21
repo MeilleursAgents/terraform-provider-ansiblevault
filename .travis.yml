@@ -2,7 +2,7 @@
 
 language: go
 go:
-  - 1.12.x
+  - 1.17.x
   - master
 env:
   global:
