@@ -49,7 +49,6 @@ func TestInEnvRead(t *testing.T) {
 				return
 			}
 
-			data.Set("key", testCase.key)
 			if err := data.Set("key", testCase.key); err != nil {
 				t.Errorf("unable to set key: %#v", err)
 				return
