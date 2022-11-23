@@ -45,7 +45,7 @@ dev: format style test build
 init:
 	go get github.com/kisielk/errcheck
 	go get golang.org/x/lint/golint
-	go get golang.org/x/tools/cmd/goimports
+	go install "golang.org/x/tools/cmd/goimports@latest"
 	go mod tidy
 
 ## format: Format code
