@@ -12,7 +12,7 @@ package provider
 
 import (
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/v2/pkg/vault"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // Provider create and returns a terraform.ResourceProvider.
