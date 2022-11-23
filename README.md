@@ -6,7 +6,7 @@
 
 This Terraform provider allows you to access secrets from an Ansible Vault from Terraform.
 
-Made with ❤️ by [MeilleursAgents](https://www.meilleursagents.com)
+Made with ❤️ by [Meilleurs Agents](https://www.meilleursagents.com)
 
 ## Thanks
 
@@ -16,7 +16,7 @@ Thanks to [ansible-vault-go](https://github.com/sosedoff/ansible-vault-go) repos
 ### Terraform 0.13
 This provider is available in [terraform registry](https://registry.terraform.io/providers/MeilleursAgents/ansiblevault/latest).
 
-For local development follow https://www.terraform.io/docs/commands/cli-config.html#implied-local-mirror-directories
+For local development follow https://developer.hashicorp.com/terraform/plugin/debugging#terraform-cli-development-overrides
 
 ### Terrform 0.12
 ```bash
@@ -49,7 +49,7 @@ More examples in : [examples/terraform/](https://github.com/MeilleursAgents/terr
 ### Master
 - https://github.com/MeilleursAgents/terraform-provider-ansiblevault/tree/master/docs
 
-### Latest version
+### Latest publish version
 - https://registry.terraform.io/providers/hashicorp/http/latest/docs
 
 
@@ -76,3 +76,7 @@ make github
 This project is licensed under the MIT license (see LICENSE file).
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMeilleursAgents%2Fterraform-provider-ansiblevault.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FMeilleursAgents%2Fterraform-provider-ansiblevault?ref=badge_large)
+
+## Reading
+
+Motivation behind this provider is decribe [here](https://medium.com/meilleursagents-engineering/infrastructure-automation-dont-duplicate-your-security-credentials-df7188a6cca)
