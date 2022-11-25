@@ -31,40 +31,6 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-func TestSafeString(t *testing.T) {
-	testValue := "test"
-
-	var cases = []struct {
-		intention string
-		input     interface{}
-		want      string
-	}{
-		{
-			"nil",
-			nil,
-			"",
-		},
-		{
-			"string",
-			testValue,
-			testValue,
-		},
-		{
-			"pointer to string",
-			&testValue,
-			"",
-		},
-	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.intention, func(t *testing.T) {
-			if result := safeString(testCase.input); result != testCase.want {
-				t.Errorf("SafeString() = %#v, want %#v", result, testCase.want)
-			}
-		})
-	}
-}
-
 func TestConfigure(t *testing.T) {
 	validVault, _ := vault.New("secret", "../../examples/ansible")
 

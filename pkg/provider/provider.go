@@ -12,7 +12,7 @@ package provider
 
 import (
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/v2/pkg/vault"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // Provider create and returns a terraform.ResourceProvider.
@@ -44,17 +44,8 @@ func Provider() *schema.Provider {
 			"ansiblevault_string": inStringResource(),
 		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
-			return configure(safeString(r.Get("vault_path")), safeString(r.Get("vault_pass")), safeString(r.Get("root_folder")))
+			return configure(r.Get("vault_path").(string), r.Get("vault_pass").(string), r.Get("root_folder").(string))
 		},
-	}
-}
-
-func safeString(input interface{}) string {
-	switch input.(type) {
-	case string:
-		return input.(string)
-	default:
-		return ""
 	}
 }
 
