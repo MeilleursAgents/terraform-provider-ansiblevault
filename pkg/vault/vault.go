@@ -115,3 +115,8 @@ func (a App) InPath(vaultPath string, key string) (string, error) {
 func (a App) InString(rawVault string, key string) (string, error) {
 	return a.getVaultKey(rawVault, key, ansible_vault.Decrypt)
 }
+
+// InString encrypts a string
+func (a App) InEncString(rawValue string) (string, error) {
+	return ansible_vault.Encrypt(rawValue, a.vaultPassword)
+}
