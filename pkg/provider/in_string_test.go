@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MeilleursAgents/terraform-provider-ansiblevault/v2/pkg/vault"
+	ansible_vault "github.com/sosedoff/ansible-vault-go"
 )
 
 func TestInStringRead(t *testing.T) {
@@ -88,6 +89,60 @@ func TestInStringRead(t *testing.T) {
 
 			if failed {
 				t.Errorf("inStringRead() = (`%s`, %#v), want (`%s`, %#v)", result, err, testCase.want, testCase.wantErr)
+			}
+		})
+	}
+}
+
+func TestInStringEncRead(t *testing.T) {
+	var cases = []struct {
+		intention string
+		input     string
+		wantErr   error
+	}{
+		{
+			"simple",
+			"PROD_KEEP_IT_SECRET",
+			nil,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.intention, func(t *testing.T) {
+			data := inStringResource().Data(nil)
+
+			if err := data.Set("value", testCase.input); err != nil {
+				t.Errorf("unable to set raw value: %s", err)
+				return
+			}
+
+			vaultApp, err := vault.New("secret", ansibleFolder)
+			if err != nil {
+				t.Errorf("unable to create vault app: %#v", err)
+				return
+			}
+
+			err = inStringEncRead(data, vaultApp)
+			result := data.Get("encrypted").(string)
+
+			failed := false
+
+			if err == nil && testCase.wantErr != nil {
+				failed = true
+			} else if err != nil && testCase.wantErr == nil {
+				failed = true
+			} else if err != nil && err.Error() != testCase.wantErr.Error() {
+				failed = true
+			} else {
+				decValue, err := ansible_vault.Decrypt(result, "secret")
+				if err != nil || decValue != testCase.input {
+					t.Errorf("inStringEncRead() = (`%s`, %#v), want (`%s`, %#v)", result, err, decValue, testCase.wantErr)
+					failed = true
+				}
+			}
+
+			if failed {
+				t.Errorf("inStringEncRead() = (`%s`, %#v), want (%#v)", result, err, testCase.wantErr)
 			}
 		})
 	}

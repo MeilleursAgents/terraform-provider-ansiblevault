@@ -31,6 +31,10 @@ EOF
   key       = "API_KEY"
 }
 
+resource "ansiblevault_enc_string" "key_enc_string" {
+  value = "THIS_WAS_IN_CLEAR_TEXT"
+}
+
 output "path" {
   value = data.ansiblevault_path.path.value
 }
@@ -41,4 +45,8 @@ output "env" {
 
 output "key_string" {
   value = data.ansiblevault_string.key_string.value
+}
+
+output "key_enc_string" {
+  value = ansiblevault_enc_string.key_enc_string.encrypted
 }

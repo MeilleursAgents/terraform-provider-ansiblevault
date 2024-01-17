@@ -43,6 +43,9 @@ func Provider() *schema.Provider {
 			"ansiblevault_path":   inPathResource(),
 			"ansiblevault_string": inStringResource(),
 		},
+		ResourcesMap: map[string]*schema.Resource{
+			"ansiblevault_enc_string": inStringEncResource(),
+		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
 			return configure(r.Get("vault_path").(string), r.Get("vault_pass").(string), r.Get("root_folder").(string))
 		},
