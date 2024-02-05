@@ -24,4 +24,4 @@ jobs:
       - name: Build
         run: make
       - name: Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
