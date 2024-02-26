@@ -3,7 +3,7 @@ module github.com/MeilleursAgents/terraform-provider-ansiblevault/v2
 go 1.12
 
 require (
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.31.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.33.0
 	github.com/sosedoff/ansible-vault-go v0.2.0
 	gopkg.in/yaml.v2 v2.4.0
 )
