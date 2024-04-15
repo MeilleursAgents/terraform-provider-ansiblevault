@@ -1,8 +1,9 @@
 package vault
 
 import (
+	"bytes"
 	"errors"
-	"fmt"
+	"html/template"
 	"io/ioutil"
 	"path"
 	"strconv"
@@ -27,10 +28,11 @@ var (
 type App struct {
 	vaultPassword string
 	rootFolder    string
+	path_template template.Template
 }
 
 // New creates new App from Config
-func New(vaultPassword string, rootFolder string) (*App, error) {
+func New(vaultPassword string, rootFolder string, path_pattern string) (*App, error) {
 	if rootFolder == "" {
 		return nil, ErrNoRootFolder
 	}
@@ -38,6 +40,9 @@ func New(vaultPassword string, rootFolder string) (*App, error) {
 	return &App{
 		vaultPassword: vaultPassword,
 		rootFolder:    rootFolder,
+		path_template: *template.Must(
+			template.New("path_pattern").Parse(path_pattern),
+		),
 	}, nil
 }
 
@@ -101,9 +106,15 @@ func (a App) getVaultKey(filename string, key string, getVaultContent func(strin
 	return "", ErrKeyNotFound
 }
 
-// InEnv retrieves given key in environment vault
-func (a App) InEnv(env string, key string) (string, error) {
-	return a.getVaultKey(path.Join(a.rootFolder, fmt.Sprintf("group_vars/tag_%s/vault.yml", env)), key, ansible_vault.DecryptFile)
+// InPathPattern retrieves given key in environment vault
+func (a App) InPathPattern(pathParams map[string]interface{}, key string) (string, error) {
+	var buffer bytes.Buffer
+	err := a.path_template.Execute(&buffer, pathParams)
+	if err != nil {
+		return "", err
+	}
+
+	return a.getVaultKey(path.Join(a.rootFolder, buffer.String()), key, ansible_vault.DecryptFile)
 }
 
 // InPath retrieves given key in vault file

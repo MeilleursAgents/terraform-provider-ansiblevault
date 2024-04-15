@@ -5,6 +5,7 @@ variable "vault_pass" {
 
 #  See https://github.com/MeilleursAgents/terraform-provider-ansiblevault/blob/master/README.md for installation and usage
 provider "ansiblevault" {
+  path_pattern = "/group_vars/tag_{{.env}}/vault.yml"
   vault_pass  = var.vault_pass
   root_folder = "../ansible"
 }
@@ -14,8 +15,10 @@ data "ansiblevault_path" "path" {
   key  = "API_KEY"
 }
 
-data "ansiblevault_env" "env" {
-  env = "prod"
+data "ansiblevault_path_pattern" "env" {
+  path_params = {
+    env = "prod"
+  }
   key = "API_KEY"
 }
 
@@ -40,7 +43,7 @@ output "path" {
 }
 
 output "env" {
-  value = data.ansiblevault_env.env.value
+  value = data.ansiblevault_path_pattern.env.value
 }
 
 output "key_string" {

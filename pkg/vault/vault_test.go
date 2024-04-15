@@ -33,7 +33,7 @@ func TestNew(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
-			result, err := New(testCase.vaultPass, testCase.rootFolder)
+			result, err := New(testCase.vaultPass, testCase.rootFolder, "")
 
 			failed := false
 
@@ -269,7 +269,7 @@ func TestGetVaultKey(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
-			app, err := New(testCase.vaultPass, testCase.rootFolder)
+			app, err := New(testCase.vaultPass, testCase.rootFolder, "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
@@ -359,22 +359,29 @@ func TestGetVaultPassword(t *testing.T) {
 
 func TestInEnv(t *testing.T) {
 	var cases = []struct {
-		intention string
-		env       string
-		key       string
-		want      string
-		wantErr   error
+		intention  string
+		pattern    string
+		pathParams map[string]interface{}
+		key        string
+		want       string
+		wantErr    error
 	}{
 		{
 			"simple",
-			"prod",
+			"group_vars/tag_{{.env}}/vault.yml",
+			map[string]interface{}{
+				"env": "prod",
+			},
 			"API_KEY",
 			"PROD_KEEP_IT_SECRET",
 			nil,
 		},
 		{
 			"not existing env",
-			"dev",
+			"group_vars/tag_{{.env}}/vault.yml",
+			map[string]interface{}{
+				"env": "dev",
+			},
 			"API_KEY",
 			"",
 			fmt.Errorf("open %s: no such file or directory", path.Join(ansibleFolder, "group_vars/tag_dev/vault.yml")),
@@ -386,13 +393,13 @@ func TestInEnv(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New("secret", ansibleFolder)
+			app, err := New("secret", ansibleFolder, testCase.pattern)
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
 			}
 
-			result, err := app.InEnv(testCase.env, testCase.key)
+			result, err := app.InPathPattern(testCase.pathParams, testCase.key)
 
 			failed = false
 
@@ -407,7 +414,7 @@ func TestInEnv(t *testing.T) {
 			}
 
 			if failed {
-				t.Errorf("InEnv(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.env, testCase.key, result, err, testCase.want, testCase.wantErr)
+				t.Errorf("InEnv(`%s`, `%s`) = (`%s`, %#v), want (`%s`, %#v)", testCase.pathParams, testCase.key, result, err, testCase.want, testCase.wantErr)
 			}
 		})
 	}
@@ -442,7 +449,7 @@ func TestInPath(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New("secret", path.Join(ansibleFolder, "group_vars"))
+			app, err := New("secret", path.Join(ansibleFolder, "group_vars"), "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return
@@ -505,7 +512,7 @@ func TestInString(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
 
-			app, err := New("secret", path.Join(ansibleFolder, "group_vars"))
+			app, err := New("secret", path.Join(ansibleFolder, "group_vars"), "")
 			if err != nil {
 				t.Errorf("unable to create App: %#v", err)
 				return

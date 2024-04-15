@@ -11,29 +11,29 @@ import (
 
 func TestInEnvRead(t *testing.T) {
 	var cases = []struct {
-		intention string
-		env       string
-		key       string
-		want      string
-		wantErr   error
+		intention  string
+		pathParams map[string]interface{}
+		key        string
+		want       string
+		wantErr    error
 	}{
 		{
 			"simple",
-			"prod",
+			map[string]interface{}{"env": "prod"},
 			"API_KEY",
 			"PROD_KEEP_IT_SECRET",
 			nil,
 		},
 		{
 			"not found key",
-			"prod",
+			map[string]interface{}{"env": "prod"},
 			"SECRET_KEY",
 			"",
-			errors.New("SECRET_KEY not found in prod vault"),
+			errors.New("not found in SECRET_KEY vault"),
 		},
 		{
 			"not found env",
-			"dev",
+			map[string]interface{}{"env": "dev"},
 			"SECRET_KEY",
 			"",
 			fmt.Errorf("open %s: no such file or directory", path.Join(ansibleFolder, "group_vars/tag_dev/vault.yml")),
@@ -42,9 +42,9 @@ func TestInEnvRead(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
-			data := inEnvResource().Data(nil)
+			data := inPathPatternResource().Data(nil)
 
-			if err := data.Set("env", testCase.env); err != nil {
+			if err := data.Set("path_params", testCase.pathParams); err != nil {
 				t.Errorf("unable to set env: %#v", err)
 				return
 			}
@@ -54,13 +54,13 @@ func TestInEnvRead(t *testing.T) {
 				return
 			}
 
-			vaultApp, err := vault.New("secret", ansibleFolder)
+			vaultApp, err := vault.New("secret", ansibleFolder, "/group_vars/tag_{{.env}}/vault.yml")
 			if err != nil {
 				t.Errorf("unable to create vault app: %#v", err)
 				return
 			}
 
-			err = inEnvRead(data, vaultApp)
+			err = inPathPatternRead(data, vaultApp)
 			result := data.Get("value").(string)
 
 			failed := false
