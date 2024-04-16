@@ -8,13 +8,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func inEnvResource() *schema.Resource {
+func inPathPatternResource() *schema.Resource {
 	return &schema.Resource{
-		Read: inEnvRead,
+		Read: inPathPatternRead,
 		Schema: map[string]*schema.Schema{
-			"env": {
-				Type:        schema.TypeString,
-				Description: "Ansible environment searched",
+			"path_params": {
+				Type:        schema.TypeMap,
+				Description: "Parameters for path pattern",
 				Required:    true,
 			},
 			"key": {
@@ -31,18 +31,18 @@ func inEnvResource() *schema.Resource {
 	}
 }
 
-func inEnvRead(data *schema.ResourceData, m interface{}) error {
-	env := data.Get("env").(string)
+func inPathPatternRead(data *schema.ResourceData, m interface{}) error {
+	pathParams := data.Get("path_params").(map[string]interface{})
 	key := data.Get("key").(string)
 
 	data.SetId(time.Now().UTC().String())
 
-	value, err := m.(*vault.App).InEnv(env, key)
+	value, err := m.(*vault.App).InPathPattern(pathParams, key)
 	if err != nil {
 		data.SetId("")
 
 		if err == vault.ErrKeyNotFound {
-			return fmt.Errorf("%s not found in %s vault", key, env)
+			return fmt.Errorf("not found in %s vault", key)
 		}
 
 		return err

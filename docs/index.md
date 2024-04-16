@@ -11,6 +11,7 @@ See [examples](https://github.com/MeilleursAgents/terraform-provider-ansiblevaul
 | Key | Required | EnvVar | Description |
 |:--:|:--:|:--:|:--:|
 | vault_path |  | `ANSIBLE_VAULT_PASSWORD_FILE` | Path to ansible vault password file |
+| path_pattern |  | `ANSIBLE_VAULT_PATH_PATTERN` | Vault file path pattern to be used by ansiblevault_path_pattern resources (example: /group_vars/{{.env}}/vault.yml) |
 | vault_pass |  | `ANSIBLE_VAULT_PASS` | Ansible vault pass value |
 | root_folder | ✅ | `ANSIBLE_ROOT_FOLDER` | Ansible root directory |
 

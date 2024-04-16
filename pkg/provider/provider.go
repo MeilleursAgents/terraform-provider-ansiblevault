@@ -25,6 +25,12 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ANSIBLE_VAULT_PASSWORD_FILE", nil),
 			},
+			"path_pattern": {
+				Type:        schema.TypeString,
+				Description: "Vault path pattern (example: '/group_vars/tag_{{ .env }}/vault.yml')",
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ANSIBLE_VAULT_PATH_PATTERN", nil),
+			},
 			"vault_pass": {
 				Type:        schema.TypeString,
 				Description: "Ansible vault pass value",
@@ -39,24 +45,24 @@ func Provider() *schema.Provider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"ansiblevault_env":    inEnvResource(),
-			"ansiblevault_path":   inPathResource(),
-			"ansiblevault_string": inStringResource(),
+			"ansiblevault_path_pattern": inPathPatternResource(),
+			"ansiblevault_path":         inPathResource(),
+			"ansiblevault_string":       inStringResource(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"ansiblevault_enc_string": inStringEncResource(),
 		},
 		ConfigureFunc: func(r *schema.ResourceData) (interface{}, error) {
-			return configure(r.Get("vault_path").(string), r.Get("vault_pass").(string), r.Get("root_folder").(string))
+			return configure(r.Get("vault_path").(string), r.Get("path_pattern").(string), r.Get("vault_pass").(string), r.Get("root_folder").(string))
 		},
 	}
 }
 
-func configure(path, pass, rootFolder string) (interface{}, error) {
+func configure(path string, path_pattern string, pass string, rootFolder string) (interface{}, error) {
 	pass, err := vault.GetVaultPassword(path, pass)
 	if err != nil {
 		return nil, err
 	}
 
-	return vault.New(pass, rootFolder)
+	return vault.New(pass, rootFolder, path_pattern)
 }

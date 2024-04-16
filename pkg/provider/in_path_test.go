@@ -54,7 +54,7 @@ func TestInPathRead(t *testing.T) {
 				return
 			}
 
-			vaultApp, err := vault.New("secret", ansibleFolder)
+			vaultApp, err := vault.New("secret", ansibleFolder, "")
 			if err != nil {
 				t.Errorf("unable to create vault app: %#v", err)
 				return

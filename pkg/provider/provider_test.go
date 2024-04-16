@@ -32,18 +32,20 @@ func TestProvider(t *testing.T) {
 }
 
 func TestConfigure(t *testing.T) {
-	validVault, _ := vault.New("secret", "../../examples/ansible")
+	validVault, _ := vault.New("secret", "../../examples/ansible", "")
 
 	var cases = []struct {
-		intention  string
-		path       string
-		pass       string
-		rootFolder string
-		want       interface{}
-		wantErr    error
+		intention    string
+		path       	 string
+		path_pattern string
+		pass         string
+		rootFolder   string
+		want         interface{}
+		wantErr      error
 	}{
 		{
 			"erroneous password",
+			"",
 			"",
 			"",
 			"",
@@ -52,6 +54,7 @@ func TestConfigure(t *testing.T) {
 		},
 		{
 			"erroneous password",
+			"",
 			"",
 			"secret",
 			"../../examples/ansible",
@@ -62,7 +65,7 @@ func TestConfigure(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.intention, func(t *testing.T) {
-			result, err := configure(testCase.path, testCase.pass, testCase.rootFolder)
+			result, err := configure(testCase.path, testCase.path_pattern, testCase.pass, testCase.rootFolder)
 
 			failed := false
 

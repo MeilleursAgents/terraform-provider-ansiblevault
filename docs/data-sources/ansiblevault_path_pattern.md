@@ -1,6 +1,6 @@
 # `ansiblevault_env` Data Source
 
-Use `ansiblevault_env` data source to read in `group_vars/tag_<env>/vault.yml` file the specified `key`.
+Use `ansiblevault_path_pattern` data source to read from path_pattern (see provider config) file the specified `key`.
 
 ## Example Usage
 
@@ -10,7 +10,7 @@ See [examples](https://github.com/MeilleursAgents/terraform-provider-ansiblevaul
 
 The following arguments are supported:
 
-* `env` - (Required) environment targeted for reading.
+* `path_params` - (Required) A map to render the path_pattern. Must contains all keys given in path_pattern
 
 * `key` - (Required) key to find in yaml.
 
